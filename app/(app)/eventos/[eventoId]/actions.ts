@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { dataValida } from "@/lib/datas";
 import { lerLink } from "@/lib/links";
 import type { Resultado } from "@/lib/resultado";
-import { createClient } from "@/lib/supabase/server";
+import { createClientAutenticado } from "@/lib/supabase/server";
 import type { TablesUpdate } from "@/types/database";
 
 const ERRO_GENERICO = "Não foi possível salvar. Tente novamente.";
@@ -31,7 +31,7 @@ export async function criarItem(
     return { erro: "Informe o serviço (até 200 caracteres)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   // O item novo entra no fim da tabela
   const { data: ultimo } = await supabase
@@ -125,7 +125,7 @@ export async function atualizarItem(
 
   if (Object.keys(mudancas).length === 0) return { erro: null };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("itens_orcamento")
     .update(mudancas)
@@ -143,7 +143,7 @@ export async function atualizarItem(
 }
 
 export async function excluirItem(id: string): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("itens_orcamento")
     .delete()

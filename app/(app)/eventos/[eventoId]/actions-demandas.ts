@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { dataValida } from "@/lib/datas";
 import { lerLink } from "@/lib/links";
 import type { Resultado } from "@/lib/resultado";
-import { createClient } from "@/lib/supabase/server";
+import { createClientAutenticado } from "@/lib/supabase/server";
 import type { TablesUpdate } from "@/types/database";
 
 // Ações da aba Demandas: seções, tarefas e subtarefas.
@@ -31,7 +31,7 @@ export async function criarSecao(eventoId: string, nome: string): Promise<Result
     return { erro: "Informe o nome da seção (até 120 caracteres)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   // A seção nova entra no fim da lista
   const { data: ultima } = await supabase
@@ -60,7 +60,7 @@ export async function renomearSecao(id: string, nome: string): Promise<Resultado
     return { erro: "Informe o nome da seção (até 120 caracteres)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("secoes")
     .update({ nome: texto })
@@ -78,7 +78,7 @@ export async function renomearSecao(id: string, nome: string): Promise<Resultado
 
 // Excluir a seção exclui também as tarefas e subtarefas dela (on delete cascade)
 export async function excluirSecao(id: string): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("secoes")
     .delete()
@@ -101,7 +101,7 @@ export async function reordenarSecoes(
 ): Promise<Resultado> {
   if (!listaDeIds(ids)) return { erro: ERRO_ORDEM };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const respostas = await Promise.all(
     ids.map((id, posicao) =>
       supabase
@@ -133,7 +133,7 @@ export async function criarTarefa(
     return { erro: "Informe a tarefa (até 300 caracteres)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   const { data: ultima } = await supabase
     .from("tarefas")
@@ -203,7 +203,7 @@ export async function atualizarTarefa(
 
   if (Object.keys(mudancas).length === 0) return { erro: null };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("tarefas")
     .update(mudancas)
@@ -221,7 +221,7 @@ export async function atualizarTarefa(
 
 // Exclui a tarefa e as subtarefas dela (on delete cascade)
 export async function excluirTarefa(id: string): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("tarefas")
     .delete()
@@ -252,7 +252,7 @@ export async function reordenarTarefas(
     );
   if (!valido) return { erro: ERRO_ORDEM };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const respostas = await Promise.all(
     secoes.flatMap((secao) =>
       secao.tarefaIds.map((tarefaId, posicao) =>
@@ -284,7 +284,7 @@ export async function criarSubtarefa(
     return { erro: "Informe a subtarefa (até 300 caracteres)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   const { data: ultima } = await supabase
     .from("subtarefas")
@@ -345,7 +345,7 @@ export async function atualizarSubtarefa(
 
   if (Object.keys(mudancas).length === 0) return { erro: null };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("subtarefas")
     .update(mudancas)
@@ -362,7 +362,7 @@ export async function atualizarSubtarefa(
 }
 
 export async function excluirSubtarefa(id: string): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("subtarefas")
     .delete()
@@ -384,7 +384,7 @@ export async function reordenarSubtarefas(
 ): Promise<Resultado> {
   if (!listaDeIds(ids)) return { erro: ERRO_ORDEM };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const respostas = await Promise.all(
     ids.map((id, posicao) =>
       supabase

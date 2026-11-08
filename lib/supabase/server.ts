@@ -29,3 +29,15 @@ export async function createClient() {
     },
   );
 }
+
+// Cliente para Server Actions: recusa a chamada se não houver sessão válida.
+// Server Actions são endpoints POST públicos; a RLS já barra anônimos, mas esta
+// checagem evita depender só dela.
+export async function createClientAutenticado() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims) {
+    throw new Error("Não autenticado.");
+  }
+  return supabase;
+}

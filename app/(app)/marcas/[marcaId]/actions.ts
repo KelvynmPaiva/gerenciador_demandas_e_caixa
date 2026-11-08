@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { hojeSaoPaulo } from "@/lib/datas";
 import type { Resultado } from "@/lib/resultado";
-import { createClient } from "@/lib/supabase/server";
+import { createClientAutenticado } from "@/lib/supabase/server";
 import type { TablesUpdate } from "@/types/database";
 
 const ERRO_GENERICO = "Não foi possível salvar. Tente novamente.";
@@ -52,7 +52,7 @@ export async function criarNota(
   const erroDeValidacao = validarNota(dados);
   if (erroDeValidacao) return { erro: erroDeValidacao };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   const { error } = await supabase.from("notas_recorrentes").insert({
     marca_id: marcaId,
@@ -93,7 +93,7 @@ export async function editarNota(
   const erroDeValidacao = validarNota(dados);
   if (erroDeValidacao) return { erro: erroDeValidacao };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("notas_recorrentes")
     .update({
@@ -117,7 +117,7 @@ export async function editarNota(
 
 // Desativada = para de gerar meses futuros. O histórico (meses já gerados) fica.
 export async function desativarNota(id: string): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("notas_recorrentes")
     .update({ ativa: false })
@@ -174,7 +174,7 @@ export async function atualizarOcorrencia(
 
   if (Object.keys(mudancas).length === 0) return { erro: null };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("ocorrencias_mensais")
     .update(mudancas)

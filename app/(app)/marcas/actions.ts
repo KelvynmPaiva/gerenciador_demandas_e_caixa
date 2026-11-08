@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClientAutenticado } from "@/lib/supabase/server";
 import type { Resultado } from "@/lib/resultado";
 
 const ERRO_GENERICO = "Não foi possível salvar. Tente novamente.";
@@ -26,7 +26,7 @@ export async function criarMarca(nome: string): Promise<Resultado> {
     return { erro: "Informe o nome da marca (até 80 caracteres)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   // A marca nova entra no fim da lista
   const { data: ultima } = await supabase
@@ -59,7 +59,7 @@ export async function renomearMarca(
     return { erro: "Informe o nome da marca (até 80 caracteres)." };
   }
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("marcas")
     .update({ nome: nomeLimpo })
@@ -80,7 +80,7 @@ export async function renomearMarca(
 // Desativar NÃO apaga nada: a marca só some da lista e do menu.
 // Eventos, tarefas e histórico continuam salvos no banco.
 export async function desativarMarca(id: string): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("marcas")
     .update({ ativa: false })
@@ -103,7 +103,7 @@ export async function moverMarca(
   id: string,
   direcao: "cima" | "baixo",
 ): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   const { data: marcas, error } = await supabase
     .from("marcas")

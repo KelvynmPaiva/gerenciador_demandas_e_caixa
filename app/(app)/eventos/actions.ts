@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { dataValida } from "@/lib/datas";
 import { lerLink } from "@/lib/links";
 import type { Resultado } from "@/lib/resultado";
-import { createClient } from "@/lib/supabase/server";
+import { createClientAutenticado } from "@/lib/supabase/server";
 
 const ERRO_GENERICO = "Não foi possível salvar. Tente novamente.";
 const ERRO_NAO_ENCONTRADO = "Evento não encontrado. Atualize a página.";
@@ -77,7 +77,7 @@ export async function criarEvento(
   const preparado = prepararEvento(dados);
   if (preparado.erro) return { erro: preparado.erro };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { error } = await supabase
     .from("eventos")
     .insert({ marca_id: marcaId, ...preparado.campos });
@@ -98,7 +98,7 @@ export async function editarEvento(
   const preparado = prepararEvento(dados);
   if (preparado.erro) return { erro: preparado.erro };
 
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("eventos")
     .update(preparado.campos)
@@ -121,7 +121,7 @@ export async function arquivarEvento(
   id: string,
   arquivado: boolean,
 ): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
   const { data, error } = await supabase
     .from("eventos")
     .update({ arquivado })
@@ -146,7 +146,7 @@ export async function excluirEvento(
   id: string,
   irParaMarca: boolean,
 ): Promise<Resultado> {
-  const supabase = await createClient();
+  const supabase = await createClientAutenticado();
 
   const { data: evento } = await supabase
     .from("eventos")
