@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { atualizarTelas } from "@/lib/acoes";
 import { dataValida } from "@/lib/datas";
 import { lerLink } from "@/lib/links";
 import type { Resultado } from "@/lib/resultado";
@@ -9,10 +9,6 @@ import { createClientAutenticado } from "@/lib/supabase/server";
 
 const ERRO_GENERICO = "Não foi possível salvar. Tente novamente.";
 const ERRO_NAO_ENCONTRADO = "Evento não encontrado. Atualize a página.";
-
-function atualizarTelas() {
-  revalidatePath("/", "layout");
-}
 
 export type DadosEvento = {
   nome: string;

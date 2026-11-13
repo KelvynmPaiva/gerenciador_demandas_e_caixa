@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { atualizarTelas, valorValido } from "@/lib/acoes";
 import { hojeSaoPaulo } from "@/lib/datas";
 import type { Resultado } from "@/lib/resultado";
 import { createClientAutenticado } from "@/lib/supabase/server";
@@ -8,15 +8,6 @@ import type { TablesUpdate } from "@/types/database";
 
 const ERRO_GENERICO = "Não foi possível salvar. Tente novamente.";
 const ERRO_NAO_ENCONTRADO = "Item não encontrado. Atualize a página.";
-
-// O banco guarda valores com até 10 dígitos antes da vírgula (numeric(12,2))
-function valorValido(valor: number): boolean {
-  return Number.isFinite(valor) && valor >= 0 && valor < 1e10;
-}
-
-function atualizarTelas() {
-  revalidatePath("/", "layout");
-}
 
 // ---------- NOTAS RECORRENTES (cadastro-mãe) ----------
 

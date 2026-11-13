@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { atualizarTelas } from "@/lib/acoes";
 import { createClientAutenticado } from "@/lib/supabase/server";
 import type { Resultado } from "@/lib/resultado";
 
@@ -13,11 +13,6 @@ const ERRO_NAO_ENCONTRADA = "Marca não encontrada.";
 function limparNome(nome: string): string | null {
   const limpo = nome.trim();
   return limpo.length > 0 && limpo.length <= 80 ? limpo : null;
-}
-
-// Atualiza o menu lateral e todas as telas depois de qualquer mudança
-function atualizarTelas() {
-  revalidatePath("/", "layout");
 }
 
 export async function criarMarca(nome: string): Promise<Resultado> {

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { atualizarTelas, ehUuid, listaDeIds } from "@/lib/acoes";
 import { dataValida } from "@/lib/datas";
 import { lerLink } from "@/lib/links";
 import type { Resultado } from "@/lib/resultado";
@@ -12,16 +12,6 @@ import type { TablesUpdate } from "@/types/database";
 const ERRO_GENERICO = "Não foi possível salvar. Tente novamente.";
 const ERRO_NAO_ENCONTRADO = "Item não encontrado. Atualize a página.";
 const ERRO_ORDEM = "Não foi possível salvar a nova ordem. A tela foi atualizada.";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function listaDeIds(ids: unknown): ids is string[] {
-  return Array.isArray(ids) && ids.every((id) => typeof id === "string" && UUID.test(id));
-}
-
-function atualizarTelas() {
-  revalidatePath("/", "layout");
-}
 
 // ---------- SEÇÕES ----------
 
@@ -247,7 +237,7 @@ export async function reordenarTarefas(
     secoes.every(
       (secao) =>
         typeof secao.secaoId === "string" &&
-        UUID.test(secao.secaoId) &&
+        ehUuid(secao.secaoId) &&
         listaDeIds(secao.tarefaIds),
     );
   if (!valido) return { erro: ERRO_ORDEM };
