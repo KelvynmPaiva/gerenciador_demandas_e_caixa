@@ -4,6 +4,7 @@ import { Pagina } from "@/components/pagina";
 import { Badge } from "@/components/ui/badge";
 import { fimDaProximaSemana, hojeSaoPaulo } from "@/lib/datas";
 import { plural } from "@/lib/formato";
+import { listarMarcasAtivas } from "@/lib/marcas";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { MenuMarca } from "./menu-marca";
@@ -25,12 +26,7 @@ export default async function MarcasPage() {
   const limiteDoPainel = fimDaProximaSemana(hojeSaoPaulo());
 
   const [marcas, eventos, pendencias] = await Promise.all([
-    supabase
-      .from("marcas")
-      .select("id, nome")
-      .eq("ativa", true)
-      .order("ordem")
-      .order("nome"),
+    listarMarcasAtivas(), // já buscada pelo layout nesta requisição (cache)
     supabase.from("eventos").select("marca_id").eq("arquivado", false),
     // Pendências = o mesmo que aparece no Painel: itens atrasados ou
     // com data até o domingo da próxima semana.

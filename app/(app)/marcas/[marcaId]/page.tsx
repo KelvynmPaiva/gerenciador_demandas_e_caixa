@@ -30,61 +30,73 @@ export default async function MarcaPage({
   const mes = lerMes(mesDaUrl) ?? mesAtual; // "AAAA-MM"
   const verArquivados = filtroDaUrl === "arquivados";
 
-  // Garante que as despesas do mês atual e do próximo já existem (não duplica)
-  await gerarOcorrenciasDoMesAtualEProximo(supabase);
+  // Garante que as despesas do mês atual e do próximo já existem (não duplica).
+  // Começa já, mas só a tabela do mês e a contagem de pendências precisam esperar:
+  // o resto das consultas roda enquanto o banco gera as despesas.
+  const geradas = gerarOcorrenciasDoMesAtualEProximo(supabase);
 
-  // Marca inexistente (ou id inválido na URL) → página "não encontrada"
-  const { data: marca } = await supabase
-    .from("marcas")
-    .select("id, nome, ativa")
-    .eq("id", marcaId)
-    .maybeSingle();
-  if (!marca) notFound();
-
-  const [ocorrencias, notasAtivas, eventosAtivos, pendencias, eventos] =
-    await Promise.all([
-      supabase
-        .from("ocorrencias_mensais")
-        .select(
-          "id, nome, vencimento, valor_previsto, valor_real, check_marcado, observacao, notas_recorrentes!inner(id, nome, valor_previsto, dia_vencimento, observacao, ativa, marca_id)",
-        )
-        .eq("notas_recorrentes.marca_id", marcaId)
-        .eq("mes_referencia", `${mes}-01`)
-        .order("vencimento")
-        .order("nome"),
-      supabase
-        .from("notas_recorrentes")
-        .select("id", { count: "exact", head: true })
-        .eq("marca_id", marcaId)
-        .eq("ativa", true),
-      supabase
-        .from("eventos")
-        .select("id", { count: "exact", head: true })
-        .eq("marca_id", marcaId)
-        .eq("arquivado", false),
-      // Pendências = o mesmo que aparece no Painel: atrasado ou até o domingo da próxima semana
-      supabase
-        .from("vw_pendencias")
-        .select("id", { count: "exact", head: true })
-        .eq("marca_id", marcaId)
-        .lte("data", fimDaProximaSemana(hoje)),
-      // Eventos da lista (ativos ou arquivados, conforme o filtro). Os mais próximos primeiro.
-      supabase
-        .from("eventos")
-        .select("id, nome, tipo, data_inicio, data_fim")
-        .eq("marca_id", marcaId)
-        .eq("arquivado", verArquivados)
-        .order("data_inicio", { ascending: true, nullsFirst: false })
-        .order("criado_em", { ascending: false }),
-    ]);
-
-  if (ocorrencias.error) throw new Error(ocorrencias.error.message);
+  const [
+    { data: marca },
+    notasAtivas,
+    eventosAtivos,
+    eventos,
+  ] = await Promise.all([
+    // Marca inexistente (ou id inválido na URL) → página "não encontrada"
+    supabase
+      .from("marcas")
+      .select("id, nome, ativa")
+      .eq("id", marcaId)
+      .maybeSingle(),
+    supabase
+      .from("notas_recorrentes")
+      .select("id", { count: "exact", head: true })
+      .eq("marca_id", marcaId)
+      .eq("ativa", true),
+    supabase
+      .from("eventos")
+      .select("id", { count: "exact", head: true })
+      .eq("marca_id", marcaId)
+      .eq("arquivado", false),
+    // Eventos da lista (ativos ou arquivados, conforme o filtro). Os mais próximos primeiro.
+    supabase
+      .from("eventos")
+      .select("id, nome, tipo, data_inicio, data_fim")
+      .eq("marca_id", marcaId)
+      .eq("arquivado", verArquivados)
+      .order("data_inicio", { ascending: true, nullsFirst: false })
+      .order("criado_em", { ascending: false }),
+  ]);
+  if (!marca) {
+    await geradas;
+    notFound();
+  }
   if (eventos.error) throw new Error(eventos.error.message);
 
-  const resumos = await resumirEventos(
-    supabase,
-    eventos.data.map((evento) => evento.id),
-  );
+  await geradas;
+
+  const [ocorrencias, pendencias, resumos] = await Promise.all([
+    supabase
+      .from("ocorrencias_mensais")
+      .select(
+        "id, nome, vencimento, valor_previsto, valor_real, check_marcado, observacao, notas_recorrentes!inner(id, nome, valor_previsto, dia_vencimento, observacao, ativa, marca_id)",
+      )
+      .eq("notas_recorrentes.marca_id", marcaId)
+      .eq("mes_referencia", `${mes}-01`)
+      .order("vencimento")
+      .order("nome"),
+    // Pendências = o mesmo que aparece no Painel: atrasado ou até o domingo da próxima semana
+    supabase
+      .from("vw_pendencias")
+      .select("id", { count: "exact", head: true })
+      .eq("marca_id", marcaId)
+      .lte("data", fimDaProximaSemana(hoje)),
+    resumirEventos(
+      supabase,
+      eventos.data.map((evento) => evento.id),
+    ),
+  ]);
+
+  if (ocorrencias.error) throw new Error(ocorrencias.error.message);
 
   const linhas: LinhaOcorrencia[] = ocorrencias.data.map((o) => ({
     id: o.id,

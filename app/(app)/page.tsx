@@ -15,6 +15,7 @@ import {
   tipoValido,
   type Pendencia,
 } from "@/lib/pendencias";
+import { listarMarcasAtivas } from "@/lib/marcas";
 import { createClient } from "@/lib/supabase/server";
 import { BlocosPainel } from "./blocos-painel";
 
@@ -43,12 +44,7 @@ export default async function PainelPage() {
       .select("id, check_marcado, valor_real")
       .eq("concluida", false)
       .lte("vencimento", limite),
-    supabase
-      .from("marcas")
-      .select("id, nome")
-      .eq("ativa", true)
-      .order("ordem")
-      .order("nome"),
+    listarMarcasAtivas(), // já buscada pelo layout nesta requisição (cache)
   ]);
 
   const erro = pendencias.error ?? ocorrencias.error ?? marcas.error;
