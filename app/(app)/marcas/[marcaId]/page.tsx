@@ -4,13 +4,13 @@ import { BotaoNovoEvento } from "@/app/(app)/eventos/dialogo-evento";
 import { Pagina } from "@/components/pagina";
 import { Badge } from "@/components/ui/badge";
 import { fimDaProximaSemana, hojeSaoPaulo, lerMes } from "@/lib/datas";
-import { resumirEventos } from "@/lib/eventos";
+import { ordenarDespesas, type NotaComMeses } from "@/lib/despesas";
+import { RESUMO_VAZIO, resumirEventos } from "@/lib/eventos";
 import { plural } from "@/lib/formato";
-import { gerarOcorrenciasDoMesAtualEProximo } from "@/lib/ocorrencias";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { CartaoEvento } from "./cartao-evento";
-import { BotaoNovaNota } from "./dialogo-nota";
+import { BotaoAdicionarDespesa } from "./dialogo-despesa";
 import { SeletorMes } from "./seletor-mes";
 import { TabelaOcorrencias, type LinhaOcorrencia } from "./tabela-ocorrencias";
 
@@ -30,16 +30,15 @@ export default async function MarcaPage({
   const mes = lerMes(mesDaUrl) ?? mesAtual; // "AAAA-MM"
   const verArquivados = filtroDaUrl === "arquivados";
 
-  // Garante que as despesas do mês atual e do próximo já existem (não duplica).
-  // Começa já, mas só a tabela do mês e a contagem de pendências precisam esperar:
-  // o resto das consultas roda enquanto o banco gera as despesas.
-  const geradas = gerarOcorrenciasDoMesAtualEProximo(supabase);
-
+  // As despesas de cada mês são cadastradas à mão ("Adicionar despesa"):
+  // não há geração automática, então tudo pode ser buscado em paralelo.
   const [
     { data: marca },
-    notasAtivas,
+    notas,
     eventosAtivos,
     eventos,
+    ocorrencias,
+    pendencias,
   ] = await Promise.all([
     // Marca inexistente (ou id inválido na URL) → página "não encontrada"
     supabase
@@ -47,11 +46,12 @@ export default async function MarcaPage({
       .select("id, nome, ativa")
       .eq("id", marcaId)
       .maybeSingle(),
+    // Todas as despesas recorrentes da marca e os meses em que já estão
+    // (para o contador do topo e as sugestões de "Adicionar despesa")
     supabase
       .from("notas_recorrentes")
-      .select("id", { count: "exact", head: true })
-      .eq("marca_id", marcaId)
-      .eq("ativa", true),
+      .select("id, nome, ocorrencias_mensais(mes_referencia)")
+      .eq("marca_id", marcaId),
     supabase
       .from("eventos")
       .select("id", { count: "exact", head: true })
@@ -65,55 +65,51 @@ export default async function MarcaPage({
       .eq("arquivado", verArquivados)
       .order("data_inicio", { ascending: true, nullsFirst: false })
       .order("criado_em", { ascending: false }),
-  ]);
-  if (!marca) {
-    await geradas;
-    notFound();
-  }
-  if (eventos.error) throw new Error(eventos.error.message);
-
-  await geradas;
-
-  const [ocorrencias, pendencias, resumos] = await Promise.all([
+    // Despesas do mês. O nome vem da nota (fonte única: renomear vale para todos os meses).
     supabase
       .from("ocorrencias_mensais")
       .select(
-        "id, nome, vencimento, valor_previsto, valor_real, check_marcado, observacao, notas_recorrentes!inner(id, nome, valor_previsto, dia_vencimento, observacao, ativa, marca_id)",
+        "id, vencimento, valor_real, check_marcado, observacao, notas_recorrentes!inner(id, nome, observacao, marca_id)",
       )
       .eq("notas_recorrentes.marca_id", marcaId)
-      .eq("mes_referencia", `${mes}-01`)
-      .order("vencimento")
-      .order("nome"),
+      .eq("mes_referencia", `${mes}-01`),
     // Pendências = o mesmo que aparece no Painel: atrasado ou até o domingo da próxima semana
     supabase
       .from("vw_pendencias")
       .select("id", { count: "exact", head: true })
       .eq("marca_id", marcaId)
       .lte("data", fimDaProximaSemana(hoje)),
-    resumirEventos(
-      supabase,
-      eventos.data.map((evento) => evento.id),
-    ),
   ]);
-
+  if (!marca) notFound();
+  if (eventos.error) throw new Error(eventos.error.message);
+  if (notas.error) throw new Error(notas.error.message);
   if (ocorrencias.error) throw new Error(ocorrencias.error.message);
 
-  const linhas: LinhaOcorrencia[] = ocorrencias.data.map((o) => ({
-    id: o.id,
-    nome: o.nome,
-    vencimento: o.vencimento,
-    valorPrevisto: o.valor_previsto,
-    valorReal: o.valor_real,
-    checkMarcado: o.check_marcado,
-    observacao: o.observacao,
-    nota: {
-      id: o.notas_recorrentes.id,
-      nome: o.notas_recorrentes.nome,
-      valorPrevisto: o.notas_recorrentes.valor_previsto,
-      diaVencimento: o.notas_recorrentes.dia_vencimento,
-      observacao: o.notas_recorrentes.observacao,
-      ativa: o.notas_recorrentes.ativa,
-    },
+  const resumos = await resumirEventos(
+    supabase,
+    eventos.data.map((evento) => evento.id),
+  );
+
+  // Ordem: data e, no empate, nome (o nome está na nota, por isso a ordem é feita aqui)
+  const linhas: LinhaOcorrencia[] = ordenarDespesas(
+    ocorrencias.data.map((o) => ({
+      id: o.id,
+      vencimento: o.vencimento,
+      valorReal: o.valor_real,
+      checkMarcado: o.check_marcado,
+      observacao: o.observacao,
+      nota: {
+        id: o.notas_recorrentes.id,
+        nome: o.notas_recorrentes.nome,
+        observacao: o.notas_recorrentes.observacao,
+      },
+    })),
+  );
+
+  const notasComMeses: NotaComMeses[] = notas.data.map((nota) => ({
+    id: nota.id,
+    nome: nota.nome,
+    meses: nota.ocorrencias_mensais.map((o) => o.mes_referencia.slice(0, 7)),
   }));
 
   const qtdPendencias = pendencias.count ?? 0;
@@ -153,7 +149,7 @@ export default async function MarcaPage({
           <span aria-hidden>•</span>
           <span>
             {plural(
-              notasAtivas.count ?? 0,
+              notasComMeses.length,
               "nota recorrente",
               "notas recorrentes",
             )}
@@ -178,16 +174,16 @@ export default async function MarcaPage({
               eventosArquivados={verArquivados}
             />
           </div>
-          <BotaoNovaNota marcaId={marcaId} />
+          <BotaoAdicionarDespesa
+            marcaId={marcaId}
+            mes={mes}
+            hoje={hoje}
+            notas={notasComMeses}
+          />
         </div>
 
         {/* "key" faz a tabela recomeçar ao trocar de mês */}
-        <TabelaOcorrencias
-          key={mes}
-          ocorrencias={linhas}
-          marcaId={marcaId}
-          hoje={hoje}
-        />
+        <TabelaOcorrencias key={mes} ocorrencias={linhas} hoje={hoje} />
       </section>
 
       <section id="eventos" className="mt-12 scroll-mt-20">
@@ -232,13 +228,7 @@ export default async function MarcaPage({
               <CartaoEvento
                 key={evento.id}
                 evento={evento}
-                resumo={
-                  resumos.get(evento.id) ?? {
-                    totalOrcado: 0,
-                    nfsPendentes: 0,
-                    tarefasPendentes: 0,
-                  }
-                }
+                resumo={resumos.get(evento.id) ?? RESUMO_VAZIO}
               />
             ))}
           </div>

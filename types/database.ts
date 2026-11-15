@@ -1,4 +1,6 @@
 // Tipos gerados pelo Supabase (generate_typescript_types) em 08/11/2026.
+// Atualizados em 15/11/2026 para a migration 0002_despesas_manuais (já aplicada;
+// estrutura conferida contra `supabase gen types`).
 // Depois de qualquer mudança no banco, gere de novo e substitua este arquivo:
 //   npx supabase gen types typescript --project-id tzmvxismprraeawibbbw > types/database.ts
 //
@@ -80,7 +82,6 @@ export type Database = {
           prazo_nf: string | null
           servico: string
           status_nf: string
-          valor_orcado: number | null
           valor_real: number | null
         }
         Insert: {
@@ -94,7 +95,6 @@ export type Database = {
           prazo_nf?: string | null
           servico: string
           status_nf?: string
-          valor_orcado?: number | null
           valor_real?: number | null
         }
         Update: {
@@ -108,7 +108,6 @@ export type Database = {
           prazo_nf?: string | null
           servico?: string
           status_nf?: string
-          valor_orcado?: number | null
           valor_real?: number | null
         }
         Relationships: [
@@ -147,34 +146,25 @@ export type Database = {
       }
       notas_recorrentes: {
         Row: {
-          ativa: boolean
           criado_em: string
-          dia_vencimento: number
           id: string
           marca_id: string
           nome: string
           observacao: string | null
-          valor_previsto: number | null
         }
         Insert: {
-          ativa?: boolean
           criado_em?: string
-          dia_vencimento: number
           id?: string
           marca_id: string
           nome: string
           observacao?: string | null
-          valor_previsto?: number | null
         }
         Update: {
-          ativa?: boolean
           criado_em?: string
-          dia_vencimento?: number
           id?: string
           marca_id?: string
           nome?: string
           observacao?: string | null
-          valor_previsto?: number | null
         }
         Relationships: [
           {
@@ -193,10 +183,8 @@ export type Database = {
           criado_em: string
           id: string
           mes_referencia: string
-          nome: string
           nota_recorrente_id: string
           observacao: string | null
-          valor_previsto: number | null
           valor_real: number | null
           vencimento: string
         }
@@ -206,10 +194,8 @@ export type Database = {
           criado_em?: string
           id?: string
           mes_referencia: string
-          nome: string
           nota_recorrente_id: string
           observacao?: string | null
-          valor_previsto?: number | null
           valor_real?: number | null
           vencimento: string
         }
@@ -219,10 +205,8 @@ export type Database = {
           criado_em?: string
           id?: string
           mes_referencia?: string
-          nome?: string
           nota_recorrente_id?: string
           observacao?: string | null
-          valor_previsto?: number | null
           valor_real?: number | null
           vencimento?: string
         }
@@ -378,7 +362,7 @@ export type Database = {
       }
     }
     Functions: {
-      gerar_ocorrencias: { Args: { p_mes: string }; Returns: undefined }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

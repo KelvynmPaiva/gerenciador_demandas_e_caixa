@@ -3,7 +3,7 @@
 # Gerenciador de tarefas — guia para a IA
 
 ## Visão geral
-App web privado para 2 pessoas da equipe de marketing: **Marcas** → **Notas recorrentes** (despesas mensais) e **Eventos** (Orçamento/NFs + Demandas: seções › tarefas › subtarefas), com **Painel** de pendências (atrasadas / esta semana / próxima semana). Interface e mensagens em **português do Brasil**; identificadores de domínio também em português (`marcas`, `eventos`, `tarefas`, `ocorrencias_mensais`...). Documentação funcional e design: `spec/`.
+App web privado para 2 pessoas da equipe de marketing: **Marcas** → **Notas recorrentes** (despesas mensais, cadastradas à mão mês a mês) e **Eventos** (Orçamento/NFs + Demandas: seções › tarefas › subtarefas), com **Painel** de pendências (atrasadas / esta semana / próxima semana). Interface e mensagens em **português do Brasil**; identificadores de domínio também em português (`marcas`, `eventos`, `tarefas`, `ocorrencias_mensais`...). Documentação funcional e design: `spec/`.
 
 ## Stack e comandos
 - Next.js **16.4.5** (App Router, Turbopack, `proxy.ts` no lugar de `middleware.ts`), React 19, TypeScript estrito.
@@ -38,6 +38,8 @@ lib/__tests__/           testes Vitest da lib/
 lib/supabase/server.ts   createClient (1 por requisição, React.cache), obterClaims, createClientAutenticado
 lib/marcas.ts            listarMarcasAtivas (cache por requisição)
 lib/acoes.ts             helpers das actions: atualizarTelas, valorValido, ehUuid, listaDeIds
+lib/despesas.ts          despesas recorrentes: sugestões do mês, nome repetido, ordem da tabela
+lib/eventos.ts           resumo dos cartões de evento (total real, NFs e tarefas pendentes)
 supabase/migrations/     SQL (rodado à mão no SQL Editor do Supabase)
 types/database.ts        tipos GERADOS do Supabase — não editar à mão; regenerar se o schema mudar
 spec/                    documentação funcional e design (DESIGN.md)
@@ -58,8 +60,10 @@ docs/CHANGELOG.md        histórico de funcionalidades e mudanças
 - Não commitar sem pedido. Commits em português, `tipo(escopo): resumo`.
 
 ## Banco de dados
-`marcas` → `notas_recorrentes` → `ocorrencias_mensais` (geradas por `gerar_ocorrencias(p_mes)`, idempotente); `marcas` → `eventos` → `itens_orcamento` e `secoes` → `tarefas` → `subtarefas`; view `vw_pendencias` (security_invoker). Schema completo em `supabase/migrations/`.
+`marcas` → `notas_recorrentes` → `ocorrencias_mensais`; `marcas` → `eventos` → `itens_orcamento` e `secoes` → `tarefas` → `subtarefas`; view `vw_pendencias` (security_invoker). Schema completo em `supabase/migrations/` (0001 inicial + 0002 despesas manuais).
 - Migrations novas: `supabase/migrations/NNNN_nome.sql`, e **avisar que precisam ser rodadas no Supabase**; depois regenerar `types/database.ts`.
+- **Despesas recorrentes (desde a 0002):** `notas_recorrentes` = só o nome (e observação) da despesa, **fonte única do nome** (tela e `vw_pendencias` leem dela). Cada mês é uma linha em `ocorrencias_mensais` criada à mão (`criarOcorrencia`), com data (`vencimento`) livre; `unique (nota_recorrente_id, mes_referencia)` impede duplicar no mês. Não há geração automática. Excluir a nota (`excluirNota`) apaga todos os meses (cascade); `excluirOcorrencia` apaga só um mês e mantém a nota (volta como sugestão). Nome de nota não se repete na marca (`notaComMesmoNome`, sem diferenciar maiúsculas/espaços), na criação e ao renomear.
+- Só **valor real** em itens de evento e despesas: não existem mais valor orçado/previsto.
 - `ocorrencias_mensais.concluida` é coluna gerada (check **e** valor real) — nunca enviar no update.
 
 ## Decisões importantes

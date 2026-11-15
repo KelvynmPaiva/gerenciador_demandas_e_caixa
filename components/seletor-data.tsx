@@ -20,6 +20,7 @@ export function SeletorData({
   placeholder = "Definir data",
   estilo = "campo",
   destaque = false,
+  permitirLimpar = true,
 }: {
   valor: string | null;
   onChange: (novaData: string | null) => void;
@@ -27,12 +28,15 @@ export function SeletorData({
   placeholder?: string;
   estilo?: "campo" | "linha";
   destaque?: boolean; // texto vermelho (ex.: prazo vencido)
+  permitirLimpar?: boolean; // false quando a data é obrigatória (ex.: data da despesa do mês)
 }) {
   const [aberto, setAberto] = useState(false);
   const data = valor ? textoParaDate(valor) : undefined;
 
   function escolher(novaData: string | null) {
-    onChange(novaData);
+    // Clicar de novo no dia já escolhido "desmarca" no calendário: se a data é
+    // obrigatória, só fecha sem apagar.
+    if (novaData !== null || permitirLimpar) onChange(novaData);
     setAberto(false);
   }
 
@@ -65,7 +69,7 @@ export function SeletorData({
             escolher(escolhida ? dateParaTexto(escolhida) : null)
           }
         />
-        {valor && (
+        {valor && permitirLimpar && (
           <div className="border-t p-2">
             <Button
               type="button"

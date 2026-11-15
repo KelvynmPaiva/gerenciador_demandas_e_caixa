@@ -59,7 +59,6 @@ export default async function EventoPage({
     id: item.id,
     servico: item.servico,
     fornecedor: item.fornecedor,
-    valorOrcado: item.valor_orcado,
     valorReal: item.valor_real,
     statusNf: item.status_nf === "lancada" ? "lancada" : "pendente",
     prazoNf: item.prazo_nf,
