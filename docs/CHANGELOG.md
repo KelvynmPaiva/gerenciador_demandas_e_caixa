@@ -4,6 +4,17 @@ Registro de funcionalidades e mudanças relevantes, da mais recente para a mais 
 Formato: data · o que foi feito · arquivos alterados. Atualizar a cada entrega (regra no `CLAUDE.md`).
 
 ## 2026-11-15
+- **Despesas: excluir só um mês e nome sem repetição.** Menu da linha ganhou "Excluir só este mês" (`excluirOcorrencia`: apaga a despesa daquele mês e mantém a nota, que volta como sugestão); o antigo "Excluir despesa" virou "Excluir de todos os meses". Renomear (`editarNota`) recusa nome já usado por outra despesa da marca ("Já existe uma despesa com esse nome."); `notaComMesmoNome` ganhou `ignorarId`. Falha ao desfazer a nota nova em `criarOcorrencia` agora vai para o `console.error`.
+  - Arquivos: `app/(app)/marcas/[marcaId]/{actions.ts,tabela-ocorrencias.tsx}`, `lib/despesas.ts`, `lib/__tests__/despesas.test.ts`, `CLAUDE.md`
+- **Módulo de despesas: cadastro manual mês a mês** (tarefa em `docs/tarefas/Ajustes e melhorias no módulo de despesas.md`). A migration `0002_despesas_manuais.sql` já foi aplicada no Supabase (15/11/2026).
+  - Só valor real: saíram o valor orçado (itens de evento: coluna, cartões "Total orçado"/"Diferença", rodapé) e o valor previsto (despesas recorrentes). O cartão do evento na tela da marca mostra o **Total real**.
+  - Fim da geração automática (`gerar_ocorrencias`, `lib/ocorrencias.ts`): botão **"Adicionar despesa"** com mês, data, valor real e sugestões das despesas já cadastradas que ainda não estão no mês (ou "Nova despesa"). A mesma despesa não entra duas vezes no mês (unique + aviso). "Nova despesa" com nome já existente reaproveita a despesa.
+  - "Desativar nota" virou **"Excluir despesa"** (com confirmação; apaga a despesa de todos os meses).
+  - **Correção do renomear:** o nome era copiado em `ocorrencias_mensais.nome` na geração e a tela lia a cópia; agora o nome mora só na nota e a tabela e o `vw_pendencias` leem dela (vale para todos os meses).
+  - **Data livre** na linha da despesa (mesmo `SeletorData` do prazo da NF); saiu o "dia do vencimento". `SeletorData` ganhou `permitirLimpar`.
+  - `types/database.ts` ajustado à mão para a 0002; conferido contra o schema gerado pelo banco depois da migration (estrutura idêntica).
+  - Testes: `lib/__tests__/despesas.test.ts` e `lib/__tests__/eventos.test.ts` (novos), `moverParaMes` em `datas.test.ts`.
+  - Arquivos: `supabase/migrations/0002_despesas_manuais.sql` (novo), `types/database.ts`, `lib/despesas.ts` (novo), `lib/eventos.ts`, `lib/datas.ts`, `lib/ocorrencias.ts` (removido), `components/seletor-data.tsx`, `app/(app)/page.tsx`, `app/(app)/marcas/[marcaId]/{actions.ts,page.tsx,tabela-ocorrencias.tsx,dialogo-nota.tsx,dialogo-despesa.tsx (novo),cartao-evento.tsx}`, `app/(app)/eventos/[eventoId]/{actions.ts,page.tsx,painel-orcamento.tsx}`, `spec/gerenciador-tarefas-documentacao.md`, `spec/kickoff-claude-code.md`, `CLAUDE.md`
 - **Documentação reorganizada**: `CLAUDE.md` reestruturado em Visão geral, Stack e comandos, Estrutura de pastas, Convenções, Banco de dados, Decisões importantes, Pendências conhecidas e regra permanente de documentação; criado este changelog.
   - Arquivos: `CLAUDE.md`, `docs/CHANGELOG.md`
 

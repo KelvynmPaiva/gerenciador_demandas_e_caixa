@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,114 +10,61 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatarNumero, lerValor } from "@/lib/formato";
-import { criarNota, editarNota } from "./actions";
+import { editarNota } from "./actions";
 
-// Nota recorrente = o cadastro-mãe da despesa (ex.: "Gráfica", dia 10, R$ 500).
-// Todo mês ela gera uma despesa (ocorrência) copiando esses dados.
+// Nota recorrente = o nome da despesa (ex.: "Gráfica"), comum a todos os meses.
+// A data, o valor real e o check ficam em cada mês (ocorrência).
 export type NotaRecorrente = {
   id: string;
   nome: string;
-  valorPrevisto: number | null;
-  diaVencimento: number;
   observacao: string | null;
-  ativa: boolean;
 };
 
-// Janela para criar (sem "nota") ou editar (com "nota") uma nota recorrente.
+// Janela para renomear uma despesa recorrente (vale para todos os meses).
 export function DialogoNota({
   aberto,
   aoMudar,
-  marcaId,
   nota,
 }: {
   aberto: boolean;
   aoMudar: (aberto: boolean) => void;
-  marcaId: string;
-  nota?: NotaRecorrente;
+  nota: NotaRecorrente;
 }) {
   return (
     <Dialog open={aberto} onOpenChange={aoMudar}>
       <DialogContent className="sm:max-w-lg">
         {/* O formulário só existe com a janela aberta: ao reabrir, os campos começam do zero */}
-        <FormularioNota
-          marcaId={marcaId}
-          nota={nota}
-          aoFechar={() => aoMudar(false)}
-        />
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// Botão "Nova nota recorrente" do topo da tela da marca
-export function BotaoNovaNota({ marcaId }: { marcaId: string }) {
-  const [aberto, setAberto] = useState(false);
-
-  return (
-    <Dialog open={aberto} onOpenChange={setAberto}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus /> Nova nota recorrente
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <FormularioNota marcaId={marcaId} aoFechar={() => setAberto(false)} />
+        <FormularioNota nota={nota} aoFechar={() => aoMudar(false)} />
       </DialogContent>
     </Dialog>
   );
 }
 
 function FormularioNota({
-  marcaId,
   nota,
   aoFechar,
 }: {
-  marcaId: string;
-  nota?: NotaRecorrente;
+  nota: NotaRecorrente;
   aoFechar: () => void;
 }) {
-  const [nome, setNome] = useState(nota?.nome ?? "");
-  const [valor, setValor] = useState(formatarNumero(nota?.valorPrevisto));
-  const [dia, setDia] = useState(nota ? String(nota.diaVencimento) : "");
-  const [observacao, setObservacao] = useState(nota?.observacao ?? "");
+  const [nome, setNome] = useState(nota.nome);
+  const [observacao, setObservacao] = useState(nota.observacao ?? "");
   const [salvando, iniciar] = useTransition();
 
   function enviar(evento: FormEvent) {
     evento.preventDefault();
 
-    const valorLido = lerValor(valor);
-    if (!valorLido.valido) {
-      toast.error("Valor previsto inválido. Digite algo como 1.234,56");
-      return;
-    }
-
-    const dados = {
-      nome,
-      valorPrevisto: valorLido.valor,
-      diaVencimento: Number(dia),
-      observacao,
-    };
-
     iniciar(async () => {
-      const resultado = nota
-        ? await editarNota(nota.id, dados)
-        : await criarNota(marcaId, dados);
-
+      const resultado = await editarNota(nota.id, { nome, observacao });
       if (resultado.erro) {
         toast.error(resultado.erro);
         return;
       }
-      toast.success(
-        nota
-          ? "Nota atualizada. A mudança vale para os próximos meses."
-          : "Nota criada. A despesa deste mês já foi gerada.",
-      );
+      toast.success("Despesa atualizada. O nome vale para todos os meses.");
       aoFechar();
     });
   }
@@ -126,13 +72,10 @@ function FormularioNota({
   return (
     <form onSubmit={enviar} className="grid gap-4">
       <DialogHeader>
-        <DialogTitle>
-          {nota ? "Editar nota recorrente" : "Nova nota recorrente"}
-        </DialogTitle>
+        <DialogTitle>Editar despesa recorrente</DialogTitle>
         <DialogDescription>
-          {nota
-            ? "A mudança vale para os meses que ainda vão ser gerados. As despesas que já existem não são alteradas."
-            : "Todo mês, uma despesa com esses dados é criada automaticamente."}
+          O nome muda em todos os meses em que esta despesa aparece. Data, valor
+          real e check continuam sendo de cada mês.
         </DialogDescription>
       </DialogHeader>
 
@@ -149,42 +92,6 @@ function FormularioNota({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="nota-valor">Valor previsto</Label>
-          <div className="relative">
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
-              R$
-            </span>
-            <Input
-              id="nota-valor"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              inputMode="decimal"
-              placeholder="0,00"
-              className="pl-9 text-right tabular-nums"
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="nota-dia">Dia do vencimento</Label>
-          <Input
-            id="nota-dia"
-            type="number"
-            min={1}
-            max={31}
-            value={dia}
-            onChange={(e) => setDia(e.target.value)}
-            placeholder="1 a 31"
-            required
-          />
-        </div>
-      </div>
-      <p className="-mt-2 text-xs text-muted-foreground">
-        Se o mês não tiver o dia escolhido (ex.: 31 em fevereiro), vale o último
-        dia do mês.
-      </p>
-
       <div className="space-y-2">
         <Label htmlFor="nota-observacao">Observação (opcional)</Label>
         <Textarea
@@ -192,6 +99,7 @@ function FormularioNota({
           value={observacao}
           onChange={(e) => setObservacao(e.target.value)}
           rows={2}
+          maxLength={1000}
           className="bg-card text-sm"
         />
       </div>
@@ -201,7 +109,7 @@ function FormularioNota({
           Cancelar
         </Button>
         <Button type="submit" disabled={salvando}>
-          {salvando ? "Salvando..." : nota ? "Salvar" : "Criar nota"}
+          {salvando ? "Salvando..." : "Salvar"}
         </Button>
       </DialogFooter>
     </form>

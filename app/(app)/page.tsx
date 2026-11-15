@@ -9,7 +9,6 @@ import {
   horaSaoPaulo,
 } from "@/lib/datas";
 import { formatarData, plural } from "@/lib/formato";
-import { gerarOcorrenciasDoMesAtualEProximo } from "@/lib/ocorrencias";
 import {
   ordenarPendencias,
   tipoValido,
@@ -31,10 +30,7 @@ export default async function PainelPage() {
   const hoje = hojeSaoPaulo();
   const limite = fimDaProximaSemana(hoje); // domingo da próxima semana
 
-  // Ao abrir o painel, as despesas recorrentes do mês atual e do próximo já existem
-  // (a função do banco não duplica).
-  await gerarOcorrenciasDoMesAtualEProximo(supabase);
-
+  // Despesas recorrentes entram aqui só quando cadastradas no mês (não há geração automática).
   const [pendencias, ocorrencias, marcas] = await Promise.all([
     // Tudo que está atrasado ou vence até o fim da próxima semana
     supabase.from("vw_pendencias").select("*").lte("data", limite),

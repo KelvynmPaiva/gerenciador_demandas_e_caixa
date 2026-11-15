@@ -5,6 +5,7 @@ import {
   domingoDaSemana,
   fimDaProximaSemana,
   lerMes,
+  moverParaMes,
   somarDias,
   somarMeses,
 } from "@/lib/datas";
@@ -27,6 +28,14 @@ describe("datas", () => {
   it("soma meses atravessando o ano", () => {
     expect(somarMeses("2026-12", 1)).toBe("2027-01");
     expect(somarMeses("2026-01", -1)).toBe("2025-12");
+  });
+
+  it("leva a data para outro mês mantendo o dia (ou o último dia)", () => {
+    expect(moverParaMes("2026-11-15", "2026-12")).toBe("2026-12-15");
+    expect(moverParaMes("2026-01-31", "2026-02")).toBe("2026-02-28");
+    expect(moverParaMes("2026-01-31", "2028-02")).toBe("2028-02-29"); // bissexto
+    expect(moverParaMes("2026-03-31", "2026-04")).toBe("2026-04-30");
+    expect(moverParaMes("2026-12-05", "2025-01")).toBe("2025-01-05");
   });
 
   it("lê o mês da URL só se for válido", () => {

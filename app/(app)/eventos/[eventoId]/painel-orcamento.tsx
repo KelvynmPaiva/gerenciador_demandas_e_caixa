@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { FileClock, Receipt, Scale, Trash2, Wallet } from "lucide-react";
+import { FileClock, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BotaoLink } from "@/components/botao-link";
 import { CampoTexto, CampoValor } from "@/components/campos-inline";
@@ -27,7 +27,6 @@ export type ItemOrcamento = {
   id: string;
   servico: string;
   fornecedor: string | null;
-  valorOrcado: number | null;
   valorReal: number | null;
   statusNf: "pendente" | "lancada";
   prazoNf: string | null; // "AAAA-MM-DD"
@@ -63,40 +62,17 @@ export function PainelOrcamento({
     });
   }
 
-  // Totais do evento. Diferença = real − orçado (negativo = gastou menos que o orçado).
-  const totalOrcado = somarValores(linhas.map((l) => l.valorOrcado));
+  // Totais do evento: só o valor real (não existe mais valor orçado)
   const totalReal = somarValores(linhas.map((l) => l.valorReal));
-  const diferenca = Math.round((totalReal - totalOrcado) * 100) / 100;
   const nfsEmAberto = linhas.filter((l) => l.statusNf === "pendente").length;
-
-  const textoDiferenca = `${diferenca > 0 ? "+" : ""}${formatarMoeda(diferenca)}`;
-  const tomDiferenca = diferenca > 0 ? "perigo" : diferenca < 0 ? "sucesso" : "neutro";
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-4 gap-5">
-        <CartaoNumero
-          titulo="Total orçado"
-          valor={formatarMoeda(totalOrcado)}
-          icone={<Wallet className="size-5" />}
-        />
+      <div className="grid grid-cols-2 gap-5">
         <CartaoNumero
           titulo="Total real"
           valor={formatarMoeda(totalReal)}
           icone={<Receipt className="size-5" />}
-        />
-        <CartaoNumero
-          titulo="Diferença (real − orçado)"
-          valor={textoDiferenca}
-          detalhe={
-            diferenca > 0
-              ? "Acima do orçado"
-              : diferenca < 0
-                ? "Abaixo do orçado"
-                : "Igual ao orçado"
-          }
-          tom={tomDiferenca}
-          icone={<Scale className="size-5" />}
         />
         <CartaoNumero
           titulo="NFs em aberto"
@@ -121,7 +97,6 @@ export function PainelOrcamento({
             <TableRow>
               <TableHead className="pl-4">Serviço</TableHead>
               <TableHead>Fornecedor</TableHead>
-              <TableHead className="text-right">Valor orçado</TableHead>
               <TableHead className="text-right">Valor real</TableHead>
               <TableHead>Status da NF</TableHead>
               <TableHead>Prazo p/ lançar</TableHead>
@@ -135,7 +110,7 @@ export function PainelOrcamento({
             {linhas.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={8}
+                  colSpan={7}
                   className="h-28 text-center text-muted-foreground"
                 >
                   Nenhum item no orçamento. Use &ldquo;Adicionar item&rdquo; abaixo.
@@ -159,22 +134,10 @@ export function PainelOrcamento({
 
         <div className="flex items-center justify-end gap-8 border-t bg-[#f9fafb] px-5 py-4 text-sm">
           <span className="text-muted-foreground">
-            Total orçado{" "}
-            <strong className="ml-1 text-base font-semibold tabular-nums text-foreground">
-              {formatarMoeda(totalOrcado)}
-            </strong>
-          </span>
-          <span className="text-muted-foreground">
             Total real{" "}
             <strong className="ml-1 text-base font-semibold tabular-nums text-foreground">
               {formatarMoeda(totalReal)}
             </strong>
-          </span>
-          <span className="flex items-center gap-2 text-muted-foreground">
-            Diferença
-            <Badge variant={tomDiferenca} className="px-2.5 text-sm tabular-nums">
-              {textoDiferenca}
-            </Badge>
           </span>
         </div>
       </div>
@@ -185,13 +148,11 @@ export function PainelOrcamento({
 function CartaoNumero({
   titulo,
   valor,
-  detalhe,
   icone,
   tom = "neutro",
 }: {
   titulo: string;
   valor: string;
-  detalhe?: string;
   icone: React.ReactNode;
   tom?: "neutro" | "sucesso" | "perigo";
 }) {
@@ -209,7 +170,6 @@ function CartaoNumero({
         >
           {valor}
         </p>
-        {detalhe && <p className="mt-0.5 text-xs text-muted-foreground">{detalhe}</p>}
       </div>
       <span
         className={cn(
@@ -272,16 +232,6 @@ function LinhaDoItem({
           valor={item.fornecedor}
           onSalvar={(fornecedor) => aoSalvar(item.id, { fornecedor })}
         />
-      </TableCell>
-
-      <TableCell>
-        <div className="flex justify-end">
-          <CampoValor
-            rotulo={`Valor orçado de ${item.servico}`}
-            valor={item.valorOrcado}
-            onSalvar={(valorOrcado) => aoSalvar(item.id, { valorOrcado })}
-          />
-        </div>
       </TableCell>
 
       <TableCell>

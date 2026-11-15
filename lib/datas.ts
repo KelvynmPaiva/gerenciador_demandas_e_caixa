@@ -79,6 +79,15 @@ export function somarMeses(mes: string, meses: number): string {
   return paraTexto(date).slice(0, 7);
 }
 
+// Mesmo dia, em outro mês ("AAAA-MM"). Se o mês não tem esse dia, vale o último
+// (ex.: moverParaMes("2026-01-31", "2026-02") = "2026-02-28").
+export function moverParaMes(data: string, mes: string): string {
+  const [ano, numeroDoMes] = mes.split("-").map(Number);
+  const ultimoDia = new Date(Date.UTC(ano, numeroDoMes, 0)).getUTCDate();
+  const dia = Math.min(Number(data.slice(8, 10)), ultimoDia);
+  return `${mes}-${String(dia).padStart(2, "0")}`;
+}
+
 // Aceita só "AAAA-MM" válido (usado no ?mes= da URL). Devolve null se for inválido.
 export function lerMes(texto: string | undefined): string | null {
   return texto && /^\d{4}-(0[1-9]|1[0-2])$/.test(texto) ? texto : null;

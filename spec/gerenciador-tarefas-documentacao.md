@@ -6,6 +6,12 @@ Stack: Next.js + Tailwind + shadcn/ui · Supabase (banco + login) · Vercel (dep
 
 ## 1. Banco de Dados
 
+> **Atualizado em 15/11/2026:** o schema abaixo é o inicial (`0001_inicial.sql`). A migration
+> `supabase/migrations/0002_despesas_manuais.sql` removeu `itens_orcamento.valor_orcado`,
+> `notas_recorrentes.valor_previsto/dia_vencimento/ativa`, `ocorrencias_mensais.valor_previsto/nome`
+> e a função `gerar_ocorrencias`, e a `vw_pendencias` passou a ler o nome da nota.
+> As despesas de cada mês são cadastradas à mão.
+
 ```sql
 -- =========================================================
 -- Gerenciador de tarefas — schema inicial (Supabase / PostgreSQL)
@@ -234,7 +240,7 @@ insert into marcas (nome, ordem) values
 15. Clicar em um item deve abrir o evento na aba correspondente (Orçamento ou Demandas) ou a marca, no caso das recorrentes.
 16. Cada bloco deve ter um estado vazio amigável (ex.: "Nada atrasado 🎉").
 17. Abaixo dos blocos deve haver acesso à área Marcas (também disponível no menu lateral).
-18. Ao abrir o painel, o sistema deve gerar as ocorrências do mês atual e do próximo mês (função gerar_ocorrencias, sem duplicar).
+18. As despesas recorrentes só entram no painel depois de cadastradas no mês (não há geração automática).
 
 **Módulo: Marcas**
 19. O sistema deve listar as marcas ativas com nº de eventos e nº de pendências.
@@ -242,26 +248,26 @@ insert into marcas (nome, ordem) values
 21. O banco deve iniciar com as marcas BMW, MINI, BMW MOTORRAD, PORSCHE e ZEEKR/PARTAGE.
 
 **Módulo: Notas recorrentes**
-22. Na tela da marca, o usuário deve poder cadastrar notas recorrentes com nome, valor previsto, dia de vencimento (1–31) e observação.
-23. O usuário deve poder editar e desativar uma nota recorrente. Desativada, ela para de gerar meses futuros e mantém o histórico.
-24. Cada nota recorrente ativa deve gerar uma ocorrência por mês, copiando nome, valor previsto e vencimento.
-25. Se o dia de vencimento não existir no mês (ex.: 31 em fevereiro), usar o último dia do mês.
-26. Ao criar uma nota recorrente, a ocorrência do mês atual deve ser gerada na hora.
-27. A tela da marca deve listar as ocorrências do mês selecionado (seletor de mês) com: nome, vencimento, valor previsto, valor real (editável na linha), check, observação e status (Pendente / Falta valor real / Concluída).
+22. Na tela da marca, o usuário cadastra as despesas de cada mês à mão ("Adicionar despesa"): escolhe o mês, a data, o valor real (opcional) e a despesa — uma já cadastrada (sugestões: as que ainda não estão naquele mês) ou uma nova, pelo nome.
+23. A mesma despesa não pode entrar duas vezes no mesmo mês (o sistema avisa "Essa despesa já existe neste mês").
+24. O usuário pode renomear uma despesa recorrente; o nome vale para todos os meses.
+25. O usuário pode excluir uma despesa recorrente (pede confirmação); ela some de todos os meses.
+26. A data de cada despesa do mês é livre e editável na própria linha (mesmo seletor de datas do orçamento).
+27. A tela da marca deve listar as despesas do mês selecionado (seletor de mês) com: nome, data, valor real (editável na linha), check, observação e status (Pendente / Falta valor real / Concluída).
 28. Uma ocorrência só é concluída com check marcado E valor real preenchido. Preencher só o valor real não conclui.
-29. Editar o valor previsto de uma ocorrência não altera a nota-mãe nem os outros meses.
+29. O check, a data, o valor e a observação são de cada mês: mudar um mês não altera os outros.
 
 **Módulo: Eventos e ações**
 30. Na tela da marca, o usuário deve poder criar eventos/ações com nome, tipo (Evento ou Ação), datas (opcionais), link externo e observação.
 31. O usuário deve poder editar, arquivar e excluir eventos (exclusão pede confirmação).
-32. Os eventos devem aparecer como cards/pastas com nome, data, total orçado, nº de NFs pendentes e nº de tarefas pendentes. Arquivados ficam num filtro separado.
+32. Os eventos devem aparecer como cards/pastas com nome, data, total real, nº de NFs pendentes e nº de tarefas pendentes. Arquivados ficam num filtro separado.
 33. A página do evento deve ter duas abas, Orçamento e Demandas, com a aba ativa refletida na URL.
 
 **Módulo: Orçamento**
-34. A aba Orçamento deve exibir uma tabela com: serviço, fornecedor, valor orçado, valor real, status da NF, prazo para lançar a NF e observação/link.
+34. A aba Orçamento deve exibir uma tabela com: serviço, fornecedor, valor real, status da NF, prazo para lançar a NF e observação/link.
 35. O usuário deve poder adicionar, editar na própria linha e excluir itens.
 36. O status da NF deve ter só duas opções: "Lançamento pendente" (indicador vermelho) e "Lançada" (indicador verde), alternáveis com um clique.
-37. A tabela deve exibir os totais do evento: soma orçada, soma real e diferença (real − orçado).
+37. A tabela deve exibir o total real do evento (soma do valor real dos itens).
 38. Valores devem ser exibidos em R$ no formato brasileiro (1.234,56) e datas em dd/mm/aaaa.
 
 **Módulo: Demandas**
@@ -275,7 +281,7 @@ insert into marcas (nome, ordem) values
 46. Clicar numa tarefa deve abrir um painel lateral de detalhes para editar campos e subtarefas.
 
 **Geral**
-47. Valores previstos e reais (ocorrências e orçamento) devem ficar armazenados para o relatório previsto × real da v2.
+47. Só o valor real é guardado (ocorrências e orçamento); valor orçado/previsto foi removido em 15/11/2026.
 48. A interface deve ser pensada para computador (a partir de 1280 px de largura). Sem layout mobile na v1.
 49. Sem upload de anexos: apenas campos de link externo.
 50. Sem notificações externas: os avisos aparecem só no painel inicial.
@@ -319,15 +325,15 @@ Grid de cards, um por marca, com nome, nº de eventos ativos e nº de pendência
 
 **4. Marca (ex.: BMW)**
 - Cabeçalho com nome da marca.
-- Seção "Notas recorrentes do mês": seletor de mês (‹ Novembro 2026 ›) e uma tabela com nome, vencimento, valor previsto, valor real (editável), check, observação e status em etiqueta (Pendente, Falta valor real, Concluída). Botão "Nova nota recorrente" que abre um modal com nome, valor previsto, dia de vencimento e observação.
-- Seção "Eventos e ações": grid de cards no estilo pasta com nome, tipo (Evento/Ação), data, total orçado, nº de NFs pendentes e nº de tarefas pendentes. Botão "Novo evento". Filtro "Ativos / Arquivados".
+- Seção "Notas recorrentes do mês": seletor de mês (‹ Novembro 2026 ›) e uma tabela com nome, data (editável), valor real (editável), check, observação e status em etiqueta (Pendente, Falta valor real, Concluída). Botão "Adicionar despesa" que abre um modal com mês, data, valor real e a escolha da despesa (sugestões das já cadastradas ou "Nova despesa").
+- Seção "Eventos e ações": grid de cards no estilo pasta com nome, tipo (Evento/Ação), data, total real, nº de NFs pendentes e nº de tarefas pendentes. Botão "Novo evento". Filtro "Ativos / Arquivados".
 
 **5. Evento › aba Orçamento**
 - Cabeçalho do evento: nome, marca, datas, link externo, menu (editar, arquivar, excluir).
 - Abas: Orçamento (ativa) | Demandas.
-- Tabela editável: serviço, fornecedor, valor orçado, valor real, status da NF (pílula vermelha "Lançamento pendente" / verde "Lançada"), prazo para lançar a NF, observação/link.
+- Tabela editável: serviço, fornecedor, valor real, status da NF (pílula vermelha "Lançamento pendente" / verde "Lançada"), prazo para lançar a NF, observação/link.
 - Linha "+ Adicionar item" no fim da tabela.
-- Rodapé com totais: Total orçado, Total real e Diferença (verde se abaixo do orçado, vermelho se acima).
+- Rodapé com o Total real.
 
 **6. Evento › aba Demandas**
 - Mesmo cabeçalho e abas, com Demandas ativa.

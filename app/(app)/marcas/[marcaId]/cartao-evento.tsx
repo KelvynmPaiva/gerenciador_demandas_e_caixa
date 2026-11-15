@@ -48,10 +48,10 @@ export function CartaoEvento({
 
       <div className="mx-5 mt-4 rounded-lg border bg-muted/50 px-4 py-3">
         <p className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
-          Total orçado
+          Total real
         </p>
         <p className="text-2xl font-semibold tabular-nums">
-          {formatarMoeda(resumo.totalOrcado)}
+          {formatarMoeda(resumo.totalReal)}
         </p>
       </div>
 

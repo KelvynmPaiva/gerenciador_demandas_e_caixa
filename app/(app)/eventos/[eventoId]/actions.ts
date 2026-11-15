@@ -49,7 +49,6 @@ export async function criarItem(
 export type CamposItem = {
   servico?: string;
   fornecedor?: string | null;
-  valorOrcado?: number | null;
   valorReal?: number | null;
   statusNf?: "pendente" | "lancada";
   prazoNf?: string | null; // "AAAA-MM-DD"
@@ -75,12 +74,6 @@ export async function atualizarItem(
     const fornecedor = campos.fornecedor?.trim() ?? "";
     if (fornecedor.length > 200) return { erro: "Fornecedor muito longo." };
     mudancas.fornecedor = fornecedor || null;
-  }
-  if (campos.valorOrcado !== undefined) {
-    if (campos.valorOrcado !== null && !valorValido(campos.valorOrcado)) {
-      return { erro: "Valor orçado inválido." };
-    }
-    mudancas.valor_orcado = campos.valorOrcado;
   }
   if (campos.valorReal !== undefined) {
     if (campos.valorReal !== null && !valorValido(campos.valorReal)) {

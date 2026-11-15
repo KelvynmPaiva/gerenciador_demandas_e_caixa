@@ -1,3 +1,8 @@
+> **Nota (15/11/2026):** este é o prompt original da v1, mantido como histórico. Desde a migration
+> `0002_despesas_manuais.sql` não existem mais valor orçado/previsto, dia de vencimento, nota
+> desativada nem `gerar_ocorrencias`: as despesas de cada mês são cadastradas à mão. O comportamento
+> atual está em `gerenciador-tarefas-documentacao.md` (requisitos 18, 22–29, 32, 34, 37 e 47).
+
 Você é um desenvolvedor sênior. Implemente o sistema "Gerenciador de tarefas" do zero.
 Stack: Next.js (versão estável mais recente, App Router, TypeScript) + Tailwind + shadcn/ui + Supabase. Deploy na Vercel.
 Quem vai manter o projeto não é sênior: escreva código simples, legível, sem abstrações desnecessárias e com comentários curtos em português nos pontos de regra de negócio.
