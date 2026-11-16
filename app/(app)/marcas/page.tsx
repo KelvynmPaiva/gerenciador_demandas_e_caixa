@@ -77,17 +77,17 @@ export default async function MarcasPage() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/marcas/${marca.id}`}
-                    className="block truncate text-lg font-semibold tracking-[-0.015em] hover:text-primary"
+                    className="block truncate text-lg font-semibold tracking-[-0.015em] hover:text-brand"
                   >
                     {marca.nome}
                   </Link>
                   <div className="mt-1.5">
                     {qtdPendencias > 0 ? (
-                      <Badge variant="perigo">
+                      <Badge variant="danger">
                         {plural(qtdPendencias, "pendência", "pendências")}
                       </Badge>
                     ) : (
-                      <Badge variant="sucesso">Em dia</Badge>
+                      <Badge variant="success">Em dia</Badge>
                     )}
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export default async function MarcasPage() {
                   <p
                     className={cn(
                       "text-2xl font-semibold tabular-nums",
-                      qtdPendencias > 0 ? "text-perigo" : "text-sucesso",
+                      qtdPendencias > 0 ? "text-danger-text" : "text-success-text",
                     )}
                   >
                     {qtdPendencias}
@@ -122,7 +122,7 @@ export default async function MarcasPage() {
               <div className="mt-auto border-t px-5 py-3">
                 <Link
                   href={`/marcas/${marca.id}`}
-                  className="flex items-center justify-end gap-1.5 text-sm font-medium text-primary hover:underline"
+                  className="flex items-center justify-end gap-1.5 text-sm font-medium text-brand hover:underline"
                 >
                   Acessar marca <ArrowRight className="size-4" />
                 </Link>

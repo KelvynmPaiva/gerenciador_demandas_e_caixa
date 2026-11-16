@@ -120,14 +120,14 @@ export function TabelaOcorrencias({
         </TableBody>
       </Table>
 
-      <div className="flex items-center justify-between border-t bg-[#f9fafb] px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex items-center justify-between border-t bg-muted px-4 py-3 text-sm text-muted-foreground">
         <span>
           {plural(linhas.length, "despesa recorrente", "despesas recorrentes")}{" "}
           neste mês
         </span>
         <span>
           Total real lançado:{" "}
-          <strong className="font-semibold tabular-nums text-primary">
+          <strong className="font-semibold tabular-nums text-brand">
             {formatarMoeda(somarValores(linhas.map((l) => l.valorReal)))}
           </strong>
         </span>
@@ -230,11 +230,11 @@ function LinhaDaTabela({
       </TableCell>
 
       <TableCell>
-        {status === "concluida" && <Badge variant="sucesso">Concluída</Badge>}
+        {status === "concluida" && <Badge variant="success">Concluída</Badge>}
         {status === "falta_valor_real" && (
-          <Badge variant="atencao">Falta valor real</Badge>
+          <Badge variant="warning">Falta valor real</Badge>
         )}
-        {status === "pendente" && <Badge variant="neutro">Pendente</Badge>}
+        {status === "pendente" && <Badge variant="neutral">Pendente</Badge>}
       </TableCell>
 
       <TableCell>

@@ -89,22 +89,6 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* --- ALIASES TEMPORÁRIOS (nomes antigos em PT) ---
-     Mantêm as telas atuais funcionando até migrarem para danger/success/warning.
-     Remover no fim da repaginação, depois de: grep -rE "(perigo|sucesso|atencao|neutro)" app components */
-  --color-perigo: var(--danger-text);
-  --color-perigo-fundo: var(--danger-subtle);
-  --color-perigo-borda: var(--danger-border);
-  --color-sucesso: var(--success-text);
-  --color-sucesso-fundo: var(--success-subtle);
-  --color-sucesso-borda: var(--success-border);
-  --color-atencao: var(--warning-text);
-  --color-atencao-fundo: var(--warning-subtle);
-  --color-atencao-borda: var(--warning-border);
-  --color-neutro: var(--muted-foreground);
-  --color-neutro-fundo: var(--muted);
-  --color-neutro-borda: var(--border);
-
   /* --- raios: tag 5 · controle 7 · card 10 · diálogo 12 --- */
   --radius-sm: calc(var(--radius) - 3px); /* 5px */
   --radius-md: calc(var(--radius) - 1px); /* 7px */

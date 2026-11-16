@@ -92,7 +92,7 @@ export function MenuLateral({
           <Button
             type="submit"
             variant="ghost"
-            className="w-full justify-start gap-3 px-3 text-perigo hover:bg-perigo-fundo hover:text-perigo"
+            className="w-full justify-start gap-3 px-3 text-danger-text hover:bg-danger-subtle hover:text-danger-text"
           >
             <LogOut className="size-5" />
             Sair

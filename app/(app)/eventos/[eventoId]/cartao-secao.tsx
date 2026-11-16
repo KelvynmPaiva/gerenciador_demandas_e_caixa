@@ -67,11 +67,11 @@ export function CartaoSecao({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "overflow-hidden rounded-xl border bg-card shadow-xs",
+        "group/secao overflow-hidden rounded-lg border bg-card shadow-xs",
         isDragging && "opacity-40",
       )}
     >
-      <header className="flex items-center gap-2 bg-[#f9fafb] px-3 py-2.5">
+      <header className="flex items-center gap-2 bg-muted px-3 py-2.5">
         <button
           type="button"
           ref={setActivatorNodeRef}
@@ -79,7 +79,7 @@ export function CartaoSecao({
           {...listeners}
           aria-label={`Arrastar a seção ${secao.nome}`}
           title="Arrastar para reordenar seções"
-          className="cursor-grab touch-none rounded p-1 text-muted-foreground/50 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+          className="cursor-grab touch-none rounded p-1 text-muted-foreground opacity-0 outline-none transition-opacity group-focus-within/secao:opacity-100 group-hover/secao:opacity-100 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/30 active:cursor-grabbing"
         >
           <GripVertical className="size-4" />
         </button>
@@ -99,15 +99,29 @@ export function CartaoSecao({
             rotulo={`Nome da seção ${secao.nome}`}
             valor={secao.nome}
             obrigatorio
-            className="text-[15px] font-semibold"
+            className="text-[14px] font-semibold"
             onSalvar={(nome) => nome && acoes.renomearSecao(secao.id, nome)}
           />
         </div>
 
-        <Badge variant="neutro" className="tabular-nums">
-          {plural(total, "tarefa", "tarefas")}
-          {concluidas > 0 && ` · ${plural(concluidas, "concluída", "concluídas")}`}
-        </Badge>
+        <div
+          role="progressbar"
+          aria-label={`Progresso da seção ${secao.nome}`}
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={concluidas}
+          className="flex items-center gap-2"
+        >
+          <span className="hidden h-1 w-16 overflow-hidden rounded-full bg-border sm:block">
+            <span
+              className="block h-full rounded-full bg-success transition-[width] duration-300 ease-out"
+              style={{ width: `${total > 0 ? (concluidas / total) * 100 : 0}%` }}
+            />
+          </span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {concluidas}/{total}
+          </span>
+        </div>
 
         <div className="ml-auto">
           <Button
@@ -115,7 +129,7 @@ export function CartaoSecao({
             size="icon-sm"
             aria-label={`Excluir a seção ${secao.nome}`}
             title="Excluir seção"
-            className="hover:bg-perigo-fundo hover:text-perigo"
+            className="hover:bg-danger-subtle hover:text-danger-text"
             onClick={() => setExcluindo(true)}
           >
             <Trash2 />
@@ -185,10 +199,10 @@ export function CartaoSecao({
 // Cópia simplificada do cabeçalho que acompanha o mouse ao arrastar a seção
 export function SecaoFlutuante({ secao }: { secao: Secao }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-3 shadow-lg">
+    <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-3 shadow-overlay">
       <GripVertical className="size-4 text-muted-foreground" />
-      <span className="text-[15px] font-semibold">{secao.nome}</span>
-      <Badge variant="neutro">{plural(secao.tarefas.length, "tarefa", "tarefas")}</Badge>
+      <span className="text-[14px] font-semibold">{secao.nome}</span>
+      <Badge variant="neutral">{plural(secao.tarefas.length, "tarefa", "tarefas")}</Badge>
     </div>
   );
 }

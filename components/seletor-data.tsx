@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { ptBR } from "react-day-picker/locale";
 import { Button } from "@/components/ui/button";
+import { DateChip } from "@/components/date-chip";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { dateParaTexto, textoParaDate } from "@/lib/datas";
@@ -20,6 +21,7 @@ export function SeletorData({
   placeholder = "Definir data",
   estilo = "campo",
   destaque = false,
+  concluido = false,
   permitirLimpar = true,
 }: {
   valor: string | null;
@@ -27,7 +29,8 @@ export function SeletorData({
   rotulo: string;
   placeholder?: string;
   estilo?: "campo" | "linha";
-  destaque?: boolean; // texto vermelho (ex.: prazo vencido)
+  destaque?: boolean; // texto vermelho (ex.: prazo vencido); no estilo "linha" a cor vem do DateChip
+  concluido?: boolean; // estilo "linha": item já concluído, então o prazo não mostra urgência
   permitirLimpar?: boolean; // false quando a data é obrigatória (ex.: data da despesa do mês)
 }) {
   const [aberto, setAberto] = useState(false);
@@ -47,16 +50,22 @@ export function SeletorData({
           type="button"
           aria-label={rotulo}
           className={cn(
-            "inline-flex h-9 items-center gap-2 rounded-lg border text-sm tabular-nums outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring",
+            "num inline-flex h-[34px] items-center gap-2 rounded-md border text-[13.5px] outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20",
             estilo === "campo"
-              ? "w-full border-input bg-card px-3 hover:border-[#d1d5db]"
+              ? "w-full border-input bg-card px-3 shadow-xs hover:border-control-border"
               : "h-8 border-transparent px-2 hover:border-input hover:bg-card",
-            !valor && "text-muted-foreground/70",
-            destaque && "font-medium text-perigo",
+            !valor && "text-subtle-foreground",
+            destaque && "font-medium text-danger-text",
           )}
         >
-          <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" />
-          {valor ? formatarData(valor) : placeholder}
+          {estilo === "linha" && valor ? (
+            <DateChip data={valor} concluido={concluido} />
+          ) : (
+            <>
+              <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" />
+              {valor ? formatarData(valor) : placeholder}
+            </>
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto gap-0 p-0">

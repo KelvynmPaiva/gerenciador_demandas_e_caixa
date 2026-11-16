@@ -63,7 +63,7 @@ export function CampoAdicionar({
         type="button"
         onClick={() => setAberto(true)}
         className={cn(
-          "flex items-center gap-2 text-sm font-medium text-primary hover:underline",
+          "flex items-center gap-2 text-sm font-medium text-brand hover:underline",
           classeBotao,
         )}
       >

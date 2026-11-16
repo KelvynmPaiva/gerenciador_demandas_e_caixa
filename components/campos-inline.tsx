@@ -69,10 +69,10 @@ export function CampoValor({
           }
         }}
         className={cn(
-          "h-8 w-full rounded-lg border pr-2.5 pl-8 text-right text-sm tabular-nums outline-none transition-colors placeholder:text-muted-foreground/60 hover:border-[#d1d5db] focus:border-ring focus:bg-card focus:ring-1 focus:ring-ring",
+          "num h-8 w-full rounded-md border pr-2.5 pl-8 text-right text-[13px] outline-none transition-colors placeholder:text-subtle-foreground hover:border-input focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20",
           destaque
-            ? "border-atencao-borda bg-atencao-fundo"
-            : "border-input bg-[#f9fafb]",
+            ? "border-warning-border bg-warning-subtle"
+            : "border-transparent bg-transparent",
         )}
       />
     </div>
@@ -146,7 +146,7 @@ export function CampoAreaTexto({
         }
       }}
       className={cn(
-        "block field-sizing-content w-full resize-none rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 hover:border-input focus:border-ring focus:bg-card focus:ring-1 focus:ring-ring",
+        "block field-sizing-content w-full resize-none rounded-md border border-transparent bg-transparent px-2.5 py-1.5 text-[13px] outline-none transition-colors placeholder:text-subtle-foreground hover:border-input focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20",
         className,
       )}
     />
@@ -211,7 +211,7 @@ export function CampoTexto({
         }
       }}
       className={cn(
-        "h-8 w-full rounded-lg border border-transparent bg-transparent px-2.5 text-sm text-ellipsis outline-none transition-colors placeholder:text-muted-foreground/60 hover:border-input focus:border-ring focus:bg-card focus:ring-1 focus:ring-ring",
+        "h-8 w-full rounded-md border border-transparent bg-transparent px-2.5 text-[13px] text-ellipsis outline-none transition-colors placeholder:text-subtle-foreground hover:border-input focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20",
         className,
       )}
     />

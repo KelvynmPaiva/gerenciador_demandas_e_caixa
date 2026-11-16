@@ -35,9 +35,9 @@ export function NovaMarca({
         ) : (
           <button
             type="button"
-            className="flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-transparent p-6 text-center transition-colors hover:border-primary/40 hover:bg-accent/50"
+            className="flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-transparent p-6 text-center transition-colors hover:border-border-strong hover:bg-accent/50"
           >
-            <span className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
+            <span className="flex size-12 items-center justify-center rounded-full bg-accent text-brand">
               <CirclePlus className="size-6" />
             </span>
             <span className="text-lg font-semibold">Cadastrar nova marca</span>

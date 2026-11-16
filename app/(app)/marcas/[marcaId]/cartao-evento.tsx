@@ -25,10 +25,10 @@ export function CartaoEvento({
     <article className="flex flex-col rounded-xl border bg-card shadow-xs">
       <div className="flex items-center justify-between gap-3 px-5 pt-5">
         <span className="flex items-center gap-2 text-xs font-semibold tracking-[0.05em] text-muted-foreground uppercase">
-          <Folder className="size-4 text-primary" />
+          <Folder className="size-4 text-brand" />
           {evento.tipo === "acao" ? "Ação" : "Evento"}
         </span>
-        <Badge variant={resumo.nfsPendentes > 0 ? "perigo" : "sucesso"}>
+        <Badge variant={resumo.nfsPendentes > 0 ? "danger" : "success"}>
           {plural(resumo.nfsPendentes, "NF pendente", "NFs pendentes")}
         </Badge>
       </div>
@@ -36,7 +36,7 @@ export function CartaoEvento({
       <div className="px-5 pt-3">
         <Link
           href={link}
-          className="block text-lg font-semibold tracking-[-0.015em] hover:text-primary"
+          className="block text-lg font-semibold tracking-[-0.015em] hover:text-brand"
         >
           {evento.nome}
         </Link>
@@ -60,7 +60,7 @@ export function CartaoEvento({
           <CircleCheck className="size-4" />
           {plural(resumo.tarefasPendentes, "tarefa pendente", "tarefas pendentes")}
         </span>
-        <Button asChild variant="outline" size="sm" className="text-primary">
+        <Button asChild variant="outline" size="sm" className="text-brand">
           <Link href={link}>
             Detalhes <ArrowRight />
           </Link>

@@ -140,7 +140,7 @@ export default async function MarcaPage({
           <h1 className="text-[30px] font-semibold leading-[38px] tracking-[-0.02em]">
             {marca.nome}
           </h1>
-          {!marca.ativa && <Badge variant="neutro">Desativada</Badge>}
+          {!marca.ativa && <Badge variant="neutral">Desativada</Badge>}
         </div>
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-muted-foreground">
           <span>
@@ -155,7 +155,7 @@ export default async function MarcaPage({
             )}
           </span>
           <span aria-hidden>•</span>
-          <span className={cn(qtdPendencias > 0 && "font-medium text-perigo")}>
+          <span className={cn(qtdPendencias > 0 && "font-medium text-danger-text")}>
             {plural(qtdPendencias, "pendência", "pendências")}
           </span>
         </p>

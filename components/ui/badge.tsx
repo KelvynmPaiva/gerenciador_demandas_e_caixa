@@ -24,11 +24,6 @@ const badgeVariants = cva(
         success: "border-success-border bg-success-subtle text-success-text",
         brand: "border-brand-border bg-brand-subtle text-brand-text",
         neutral: "border-border bg-muted text-muted-foreground",
-        // Nomes antigos em português; migrar para os de cima e remover
-        perigo: "border-danger-border bg-danger-subtle text-danger-text",
-        sucesso: "border-success-border bg-success-subtle text-success-text",
-        atencao: "border-warning-border bg-warning-subtle text-warning-text",
-        neutro: "border-border bg-muted text-muted-foreground",
       },
     },
     defaultVariants: {

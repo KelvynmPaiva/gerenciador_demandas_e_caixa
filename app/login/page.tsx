@@ -9,7 +9,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-[536px] overflow-hidden rounded-xl border border-t-[3px] border-t-primary bg-card p-11 shadow-xs">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-5 flex size-14 items-center justify-center rounded-xl border bg-muted text-primary">
+          <div className="mb-5 flex size-14 items-center justify-center rounded-xl border bg-muted text-brand">
             <LayoutDashboard className="size-6" />
           </div>
           <h1 className="text-2xl font-semibold tracking-[-0.02em]">

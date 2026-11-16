@@ -422,7 +422,7 @@ export function PainelDemandas({
           rotulo="Nova seção"
           placeholder="Nome da seção (ex.: Comunicação e Mídia)"
           maxLength={120}
-          classeBotao="w-full justify-center py-1 text-muted-foreground hover:text-primary hover:no-underline"
+          classeBotao="w-full justify-center py-1 text-muted-foreground hover:text-brand hover:no-underline"
           aoAdicionar={acoes.criarSecao}
         />
       </div>

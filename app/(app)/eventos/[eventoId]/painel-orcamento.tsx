@@ -1,13 +1,14 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { FileClock, Receipt, Trash2 } from "lucide-react";
+import { Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BotaoLink } from "@/components/botao-link";
 import { CampoTexto, CampoValor } from "@/components/campos-inline";
 import { DialogoConfirmar } from "@/components/dialogo-confirmar";
 import { SeletorData } from "@/components/seletor-data";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -18,7 +19,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatarMoeda, plural, somarValores } from "@/lib/formato";
-import { cn } from "@/lib/utils";
 import { AdicionarItem } from "./adicionar-item";
 import { atualizarItem, excluirItem, type CamposItem } from "./actions";
 
@@ -64,30 +64,15 @@ export function PainelOrcamento({
 
   // Totais do evento: só o valor real (não existe mais valor orçado)
   const totalReal = somarValores(linhas.map((l) => l.valorReal));
-  const nfsEmAberto = linhas.filter((l) => l.statusNf === "pendente").length;
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-5">
-        <CartaoNumero
-          titulo="Total real"
-          valor={formatarMoeda(totalReal)}
-          icone={<Receipt className="size-5" />}
-        />
-        <CartaoNumero
-          titulo="NFs em aberto"
-          valor={nfsEmAberto === 0 ? "Nenhuma" : plural(nfsEmAberto, "pendência", "pendências")}
-          tom={nfsEmAberto > 0 ? "perigo" : "sucesso"}
-          icone={<FileClock className="size-5" />}
-        />
-      </div>
-
-      <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
+      <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
         <div className="flex items-center justify-between border-b px-5 py-4">
-          <h2 className="text-base font-semibold">
+          <h2 className="text-h2">
             Detalhamento dos serviços contratados
           </h2>
-          <span className="text-sm text-muted-foreground">
+          <span className="num text-[13px] text-muted-foreground">
             {plural(linhas.length, "item", "itens")}
           </span>
         </div>
@@ -109,11 +94,12 @@ export function PainelOrcamento({
           <TableBody>
             {linhas.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={7}
-                  className="h-28 text-center text-muted-foreground"
-                >
-                  Nenhum item no orçamento. Use &ldquo;Adicionar item&rdquo; abaixo.
+                <TableCell colSpan={7} className="h-auto whitespace-normal p-0">
+                  <EmptyState
+                    icon={Receipt}
+                    title="Nenhum item no orçamento"
+                    text="Adicione os serviços contratados para acompanhar valores e NFs."
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -132,7 +118,7 @@ export function PainelOrcamento({
           <AdicionarItem eventoId={eventoId} />
         </div>
 
-        <div className="flex items-center justify-end gap-8 border-t bg-[#f9fafb] px-5 py-4 text-sm">
+        <div className="flex items-center justify-end gap-8 border-t bg-muted px-5 py-3.5 text-[13px]">
           <span className="text-muted-foreground">
             Total real{" "}
             <strong className="ml-1 text-base font-semibold tabular-nums text-foreground">
@@ -141,46 +127,6 @@ export function PainelOrcamento({
           </span>
         </div>
       </div>
-    </div>
-  );
-}
-
-function CartaoNumero({
-  titulo,
-  valor,
-  icone,
-  tom = "neutro",
-}: {
-  titulo: string;
-  valor: string;
-  icone: React.ReactNode;
-  tom?: "neutro" | "sucesso" | "perigo";
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-4 shadow-xs">
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{titulo}</p>
-        <p
-          title={valor}
-          className={cn(
-            "mt-1 truncate text-xl font-semibold tabular-nums",
-            tom === "perigo" && "text-perigo",
-            tom === "sucesso" && "text-sucesso",
-          )}
-        >
-          {valor}
-        </p>
-      </div>
-      <span
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-lg",
-          tom === "neutro" && "bg-muted text-muted-foreground",
-          tom === "sucesso" && "bg-sucesso-fundo text-sucesso",
-          tom === "perigo" && "bg-perigo-fundo text-perigo",
-        )}
-      >
-        {icone}
-      </span>
     </div>
   );
 }
@@ -253,15 +199,11 @@ function LinhaDoItem({
           }
           aria-label={`NF de ${item.servico}: ${lancada ? "lançada" : "lançamento pendente"}. Clique para alternar`}
           title="Clique para alternar"
-          className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
         >
-          <Badge
-            variant={lancada ? "sucesso" : "perigo"}
-            className="cursor-pointer gap-1.5"
-          >
-            <span className="size-1.5 rounded-full bg-current" />
-            {lancada ? "Lançada" : "Lançamento pendente"}
-          </Badge>
+          <StatusBadge tone={lancada ? "success" : "danger"} className="cursor-pointer">
+            {lancada ? "Lançada" : "Pendente"}
+          </StatusBadge>
         </button>
       </TableCell>
 
@@ -272,6 +214,7 @@ function LinhaDoItem({
           placeholder="Sem prazo"
           valor={item.prazoNf}
           destaque={prazoVencido}
+          concluido={lancada}
           onChange={(prazoNf) => aoSalvar(item.id, { prazoNf })}
         />
       </TableCell>
@@ -298,7 +241,7 @@ function LinhaDoItem({
           size="icon-sm"
           aria-label={`Excluir ${item.servico}`}
           title="Excluir item"
-          className="hover:bg-perigo-fundo hover:text-perigo"
+          className="hover:bg-danger-subtle hover:text-danger-text"
           onClick={() => setExcluindo(true)}
         >
           <Trash2 />

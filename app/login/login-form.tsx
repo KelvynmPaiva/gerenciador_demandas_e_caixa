@@ -58,7 +58,7 @@ export function LoginForm() {
       {estado.erro && (
         <p
           role="alert"
-          className="rounded-lg border border-perigo-borda bg-perigo-fundo px-3 py-2 text-sm text-perigo"
+          className="rounded-lg border border-danger-border bg-danger-subtle px-3 py-2 text-sm text-danger-text"
         >
           {estado.erro}
         </p>
