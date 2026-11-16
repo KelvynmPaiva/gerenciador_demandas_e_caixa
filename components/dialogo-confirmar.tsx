@@ -1,18 +1,19 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Janela de confirmação para ações que merecem um "tem certeza?"
-// (desativar marca, excluir evento...).
+// (desativar marca, excluir evento...). É um AlertDialog: não fecha ao clicar fora
+// e leva o foco para "Cancelar".
 export function DialogoConfirmar({
   aberto,
   aoMudar,
@@ -33,29 +34,27 @@ export function DialogoConfirmar({
   aoConfirmar: () => void;
 }) {
   return (
-    <Dialog open={aberto} onOpenChange={aoMudar}>
-      <DialogContent showCloseButton={false} className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{titulo}</DialogTitle>
-          <DialogDescription>{descricao}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => aoMudar(false)}
+    <AlertDialog open={aberto} onOpenChange={aoMudar}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{titulo}</AlertDialogTitle>
+          <AlertDialogDescription>{descricao}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={carregando}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            variant={perigo ? "destructive" : "default"}
             disabled={carregando}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={aoConfirmar}
-            disabled={carregando}
-            className={cn(perigo && "bg-destructive text-white hover:bg-destructive/90")}
+            // Sem isto o Radix fecharia o diálogo antes de a ação terminar
+            onClick={(e) => {
+              e.preventDefault();
+              aoConfirmar();
+            }}
           >
             {carregando ? "Aguarde..." : rotuloConfirmar}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
