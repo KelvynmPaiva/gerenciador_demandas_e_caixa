@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export type ItemBreadcrumb = {
   rotulo: string;
@@ -15,9 +15,23 @@ function Breadcrumb({
   itens: ItemBreadcrumb[];
   acoes?: React.ReactNode;
 }) {
+  const pai = itens.length > 1 ? itens[itens.length - 2] : undefined;
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-card px-4 md:px-8">
-      <nav aria-label="Caminho da página" className="flex min-w-0 items-center gap-2 text-[13px]">
+      {/* Celular: voltar + título da página. Desktop: caminho completo. */}
+      <div className="flex min-w-0 items-center gap-1 md:hidden">
+        {pai?.href && (
+          <Link
+            href={pai.href}
+            aria-label={`Voltar para ${pai.rotulo}`}
+            className="-ml-2 grid size-10 shrink-0 place-items-center rounded-md text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="size-5" />
+          </Link>
+        )}
+        <span className="truncate text-sm font-semibold">{itens[itens.length - 1]?.rotulo}</span>
+      </div>
+      <nav aria-label="Caminho da página" className="hidden min-w-0 items-center gap-2 text-[13px] md:flex">
         {itens.map((item, indice) => (
           <Fragment key={`${indice}-${item.rotulo}`}>
             {indice > 0 && (

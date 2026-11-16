@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,9 +14,19 @@ export function LoginForm() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
   return (
-    <form action={acao} className="space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="email">E-mail profissional</Label>
+    <form action={acao} className="space-y-4">
+      {estado.erro && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-md border border-danger-border bg-danger-subtle px-3 py-2.5 text-[13px] text-danger-text"
+        >
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {estado.erro}
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <Label htmlFor="email">E-mail</Label>
         <Input
           id="email"
           name="email"
@@ -28,7 +38,7 @@ export function LoginForm() {
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="senha">Senha</Label>
         <div className="relative">
           <Input
@@ -54,15 +64,6 @@ export function LoginForm() {
           </button>
         </div>
       </div>
-
-      {estado.erro && (
-        <p
-          role="alert"
-          className="rounded-lg border border-danger-border bg-danger-subtle px-3 py-2 text-sm text-danger-text"
-        >
-          {estado.erro}
-        </p>
-      )}
 
       <Button type="submit" size="lg" className="w-full" disabled={enviando}>
         {enviando ? (

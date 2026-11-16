@@ -54,10 +54,10 @@ export function AcoesDoEvento({
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setEditando(true)}>
+      <Button variant="outline" size="sm" className="max-md:hidden" onClick={() => setEditando(true)}>
         <Pencil data-icon="inline-start" /> Editar
       </Button>
-      <Button variant="outline" size="sm" onClick={alternarArquivo} disabled={ocupado}>
+      <Button variant="outline" size="sm" className="max-md:hidden" onClick={alternarArquivo} disabled={ocupado}>
         {arquivado ? <ArchiveRestore data-icon="inline-start" /> : <Archive data-icon="inline-start" />}
         {arquivado ? "Desarquivar" : "Arquivar"}
       </Button>
@@ -68,6 +68,14 @@ export function AcoesDoEvento({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
+          {/* No celular os botões do topo somem; as ações vêm para o menu */}
+          <DropdownMenuItem className="md:hidden" onSelect={() => setEditando(true)}>
+            <Pencil /> Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem className="md:hidden" disabled={ocupado} onSelect={alternarArquivo}>
+            {arquivado ? <ArchiveRestore /> : <Archive />}
+            {arquivado ? "Desarquivar" : "Arquivar"}
+          </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onSelect={() => setExcluindo(true)}>
             <Trash2 /> Excluir evento
           </DropdownMenuItem>

@@ -32,7 +32,7 @@ app/(app)/page.tsx       Painel (vw_pendencias)
 app/(app)/marcas/        lista de marcas; [marcaId]/ = notas recorrentes do mês + eventos
 app/(app)/eventos/[eventoId]/  abas ?aba=orcamento|demandas
   actions*.ts            Server Actions ("use server") ao lado da tela que as usa
-components/              compartilhados; ui/ = shadcn (gerado, evitar editar à mão)
+components/              compartilhados (DateChip, StatusBadge, ResumoEvento, EmptyState, ThemeToggle, NavegacaoMobile...); ui/ = shadcn já customizado pela repaginação (rode `git diff` antes de qualquer `npx shadcn add`)
 lib/                     lógica pura e utilitários (datas, formato, links, pendencias...)
 lib/__tests__/           testes Vitest da lib/
 lib/supabase/server.ts   createClient (1 por requisição, React.cache), obterClaims, createClientAutenticado
@@ -53,7 +53,7 @@ docs/CHANGELOG.md        histórico de funcionalidades e mudanças
 - **Datas** são texto `AAAA-MM-DD`, "hoje" sempre em `America/Sao_Paulo` (`lib/datas.ts`); semana = segunda a domingo. Não usar `new Date()` direto para regras de negócio.
 - **Links externos** só `http/https` (`lib/links.ts`); renderizar com `linkSeguro`.
 - Dinheiro: `numeric(12,2)`; formatar com `lib/formato.ts` (`formatarMoeda`, `lerValor`).
-- Estilo: componentes shadcn + tokens do Tailwind/`app/globals.css` (só tema claro); classes com `cn()`. Comentários em português, explicando o "porquê".
+- Estilo: componentes shadcn + tokens do Tailwind/`app/globals.css` (tema claro **e** escuro via `next-themes`); classes com `cn()`. **Nunca** cor fixa (`bg-white`, hex, `text-blue-*`) nem `dark:` para corrigir cor: use tokens (`bg-card`, `text-muted-foreground`, `bg-brand`, `text-danger-text`...) e ajuste o token se algo ficar errado no escuro. Prazo = `DateChip`, status = `StatusBadge`. Referência visual e guia: `docs/redesign/`. Comentários em português, explicando o "porquê".
 - Lógica nova e pura vai em `lib/` com teste em `lib/__tests__/`.
 - Mudanças pequenas e incrementais; não reescrever o que funciona; verificar no código/docs em vez de supor.
 - Não alterar `types/database.ts` nem `components/ui/*` sem necessidade.
@@ -78,7 +78,7 @@ docs/CHANGELOG.md        histórico de funcionalidades e mudanças
 - Sem testes de Server Actions nem E2E; só `lib/` é coberto.
 - Migrations não têm automação: risco de o banco divergir de `supabase/migrations/` e de `types/database.ts`.
 - Qualquer usuário autenticado vê e edita tudo (sem papéis/permissões por marca).
-- Só tema claro.
+- `npm test` falha neste ambiente com `Cannot read properties of undefined (reading 'config')` (também na `main`, mesmo após `npm ci`); investigar a instalação do vitest 5.1.
 
 ## Regra permanente de documentação
 Ao terminar qualquer funcionalidade ou mudança relevante, **antes de dizer que terminou**:

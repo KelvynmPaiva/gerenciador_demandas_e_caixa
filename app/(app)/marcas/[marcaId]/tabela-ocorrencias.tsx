@@ -82,8 +82,8 @@ export function TabelaOcorrencias({
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
-      <Table>
-        <TableHeader>
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             <TableHead className="w-10">
               <span className="sr-only">Feita</span>
@@ -98,7 +98,7 @@ export function TabelaOcorrencias({
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="max-md:block">
           {linhas.length === 0 && (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={7} className="h-auto p-0 whitespace-normal">
@@ -181,8 +181,8 @@ function LinhaDaTabela({
   }
 
   return (
-    <TableRow>
-      <TableCell>
+    <TableRow className="relative max-md:grid max-md:grid-cols-2 max-md:items-center max-md:gap-x-3 max-md:gap-y-1.5 max-md:px-4 max-md:py-3">
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:absolute max-md:top-3.5 max-md:left-4">
         <Checkbox
           checked={linha.checkMarcado}
           onCheckedChange={(marcado) =>
@@ -193,11 +193,11 @@ function LinhaDaTabela({
       </TableCell>
 
       {/* Nome longo quebra em duas linhas (como no protótipo) em vez de ser cortado */}
-      <TableCell className="max-w-[260px] min-w-[180px] whitespace-normal">
+      <TableCell className="max-w-[260px] min-w-[180px] whitespace-normal max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2 max-md:pr-10 max-md:pl-8">
         <span className="block py-1 leading-5 font-medium">{nome}</span>
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         <SeletorData
           estilo="linha"
           rotulo={`Data de ${nome}`}
@@ -211,7 +211,7 @@ function LinhaDaTabela({
         />
       </TableCell>
 
-      <TableCell className="text-right">
+      <TableCell className="text-right max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         <div className="flex justify-end">
           <CampoValor
             rotulo={`Valor real de ${nome}`}
@@ -222,7 +222,7 @@ function LinhaDaTabela({
         </div>
       </TableCell>
 
-      <TableCell className="min-w-[160px]">
+      <TableCell className="min-w-[160px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2">
         <CampoTexto
           rotulo={`Observação de ${nome}`}
           placeholder="Adicionar observação"
@@ -231,7 +231,7 @@ function LinhaDaTabela({
         />
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         {status === "concluida" && <StatusBadge tone="success">Concluída</StatusBadge>}
         {status === "falta_valor_real" && (
           <StatusBadge tone="warning">Falta valor real</StatusBadge>
@@ -239,7 +239,7 @@ function LinhaDaTabela({
         {status === "pendente" && <StatusBadge tone="neutral">Pendente</StatusBadge>}
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:absolute max-md:top-2 max-md:right-2">
         {/* modal={false}: evita que o menu trave a tela ao abrir uma janela a partir dele */}
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>

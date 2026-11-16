@@ -77,8 +77,8 @@ export function PainelOrcamento({
           </span>
         </div>
 
-        <Table className="[&_td]:px-2 [&_th]:px-2">
-          <TableHeader>
+        <Table className="[&_td]:px-2 [&_th]:px-2 max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               <TableHead className="pl-4">Serviço</TableHead>
               <TableHead>Fornecedor</TableHead>
@@ -91,7 +91,7 @@ export function PainelOrcamento({
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="max-md:block">
             {linhas.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={7} className="h-auto whitespace-normal p-0">
@@ -160,8 +160,8 @@ function LinhaDoItem({
   }
 
   return (
-    <TableRow>
-      <TableCell className="min-w-[170px] pl-4">
+    <TableRow className="relative max-md:grid max-md:grid-cols-2 max-md:items-center max-md:gap-x-3 max-md:gap-y-1.5 max-md:px-4 max-md:py-3">
+      <TableCell className="min-w-[170px] pl-4 max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2 max-md:pr-10">
         <CampoTexto
           rotulo={`Serviço ${item.servico}`}
           valor={item.servico}
@@ -171,7 +171,7 @@ function LinhaDoItem({
         />
       </TableCell>
 
-      <TableCell className="min-w-[130px]">
+      <TableCell className="min-w-[130px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         <CampoTexto
           rotulo={`Fornecedor de ${item.servico}`}
           placeholder="Fornecedor"
@@ -180,7 +180,7 @@ function LinhaDoItem({
         />
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         <div className="flex justify-end">
           <CampoValor
             rotulo={`Valor real de ${item.servico}`}
@@ -190,7 +190,7 @@ function LinhaDoItem({
         </div>
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         {/* Um clique alterna entre "Lançamento pendente" (vermelho) e "Lançada" (verde) */}
         <button
           type="button"
@@ -207,7 +207,7 @@ function LinhaDoItem({
         </button>
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         <SeletorData
           estilo="linha"
           rotulo={`Prazo para lançar a NF de ${item.servico}`}
@@ -219,7 +219,7 @@ function LinhaDoItem({
         />
       </TableCell>
 
-      <TableCell className="min-w-[160px]">
+      <TableCell className="min-w-[160px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2">
         <div className="flex items-center gap-1">
           <CampoTexto
             rotulo={`Observação de ${item.servico}`}
@@ -235,7 +235,7 @@ function LinhaDoItem({
         </div>
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:absolute max-md:top-2 max-md:right-2">
         <Button
           variant="ghost"
           size="icon-sm"

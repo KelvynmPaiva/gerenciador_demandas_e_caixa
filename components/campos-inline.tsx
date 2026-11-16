@@ -69,7 +69,7 @@ export function CampoValor({
           }
         }}
         className={cn(
-          "num h-8 w-full rounded-md border pr-2.5 pl-8 text-right text-[13px] outline-none transition-colors placeholder:text-subtle-foreground hover:border-input focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20",
+          "num h-8 w-full max-md:h-10 rounded-md border pr-2.5 pl-8 text-right text-[13px] outline-none transition-colors placeholder:text-subtle-foreground hover:border-input focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20",
           destaque
             ? "border-warning-border bg-warning-subtle"
             : "border-transparent bg-transparent",
@@ -211,7 +211,7 @@ export function CampoTexto({
         }
       }}
       className={cn(
-        "h-8 w-full rounded-md border border-transparent bg-transparent px-2.5 text-[13px] text-ellipsis outline-none transition-colors placeholder:text-subtle-foreground hover:border-input focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20",
+        "h-8 w-full max-md:h-10 rounded-md border border-transparent bg-transparent px-2.5 text-[13px] text-ellipsis outline-none transition-colors placeholder:text-subtle-foreground hover:border-input focus:border-ring focus:bg-card focus:ring-[3px] focus:ring-ring/20",
         className,
       )}
     />
