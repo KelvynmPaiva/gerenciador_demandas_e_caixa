@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, CircleCheck } from "lucide-react";
+import { CircleCheck, ListChecks, Receipt, Repeat } from "lucide-react";
 import { toast } from "sonner";
 import { atualizarItem } from "@/app/(app)/eventos/[eventoId]/actions";
 import {
@@ -12,26 +12,41 @@ import {
 } from "@/app/(app)/eventos/[eventoId]/actions-demandas";
 import { atualizarOcorrencia } from "@/app/(app)/marcas/[marcaId]/actions";
 import { CampoValor } from "@/components/campos-inline";
-import { Badge } from "@/components/ui/badge";
+import { DateChip } from "@/components/date-chip";
+import { Money } from "@/components/money";
+import { StatusBadge } from "@/components/status-badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { classificar, type Periodo } from "@/lib/datas";
-import { formatarData, plural } from "@/lib/formato";
+import {
+  classificar,
+  diasAte,
+  domingoDaSemana,
+  somarDias,
+  type Periodo,
+} from "@/lib/datas";
+import { plural } from "@/lib/formato";
 import {
   enderecoDaPendencia,
   faltaValorReal,
   ordenarPendencias,
   ROTULOS_DO_TIPO,
   type Pendencia,
+  type TipoPendencia,
 } from "@/lib/pendencias";
+import { intervaloCurto } from "@/lib/prazo";
 import type { Resultado } from "@/lib/resultado";
 import { cn } from "@/lib/utils";
+
+// Tempos da microinteração ao concluir: o título fica riscado por 700ms,
+// depois a linha some em 200ms. Nesse intervalo dá para "Desfazer" pelo aviso.
+const TEMPO_RISCADO = 700;
+const TEMPO_SUMIR = 200;
+
+type Fase = "riscado" | "saindo";
 
 type Bloco = {
   periodo: Exclude<Periodo, "depois">;
   titulo: string;
-  vazioTitulo: string;
-  vazioTexto: string;
-  cabecalho: string; // estilo do cabeçalho do bloco
+  vazio: string;
   ponto: string; // cor da bolinha ao lado do título
 };
 
@@ -39,28 +54,36 @@ const BLOCOS: Bloco[] = [
   {
     periodo: "atrasada",
     titulo: "Atrasadas",
-    vazioTitulo: "Nada atrasado 🎉",
-    vazioTexto: "Nenhum item com a data vencida.",
-    cabecalho: "border-b border-perigo-borda bg-perigo-fundo/60",
-    ponto: "bg-perigo",
+    vazio: "Nada atrasado. Tudo em dia por aqui.",
+    ponto: "bg-danger",
   },
   {
     periodo: "esta_semana",
     titulo: "Esta semana",
-    vazioTitulo: "Nada para esta semana",
-    vazioTexto: "Nenhum item vence de hoje até domingo.",
-    cabecalho: "border-b bg-muted/60",
-    ponto: "bg-primary",
+    vazio: "Nenhum item vence de hoje até domingo.",
+    ponto: "bg-warning",
   },
   {
     periodo: "proxima_semana",
     titulo: "Próxima semana",
-    vazioTitulo: "Nada para a próxima semana",
-    vazioTexto: "Nenhum item vence de segunda a domingo da semana que vem.",
-    cabecalho: "border-b bg-muted/60",
-    ponto: "bg-neutro",
+    vazio: "Nenhum item vence na semana que vem.",
+    ponto: "bg-border-strong",
   },
 ];
+
+const ICONES_DO_TIPO: Record<TipoPendencia, React.ElementType> = {
+  tarefa: ListChecks,
+  subtarefa: ListChecks,
+  nf: Receipt,
+  recorrente: Repeat,
+};
+
+const AVISO_DE_CONCLUSAO: Record<TipoPendencia, string> = {
+  tarefa: "Tarefa concluída",
+  subtarefa: "Subtarefa concluída",
+  nf: "NF lançada",
+  recorrente: "Despesa concluída",
+};
 
 // Grava o que a pessoa acabou de marcar. Cada tipo de item é salvo na sua tabela.
 function gravarConclusao(item: Pendencia): Promise<Resultado> {
@@ -76,20 +99,41 @@ function gravarConclusao(item: Pendencia): Promise<Resultado> {
   }
 }
 
+// O contrário de gravarConclusao (botão "Desfazer" do aviso)
+function reverterConclusao(item: Pendencia): Promise<Resultado> {
+  switch (item.tipo) {
+    case "tarefa":
+      return atualizarTarefa(item.id, { concluida: false });
+    case "subtarefa":
+      return atualizarSubtarefa(item.id, { concluida: false });
+    case "nf":
+      return atualizarItem(item.id, { statusNf: "pendente" });
+    default:
+      return Promise.resolve({ erro: null });
+  }
+}
+
 export function BlocosPainel({
   pendencias: doServidor,
   hoje,
+  children,
 }: {
   pendencias: Pendencia[];
   hoje: string; // "AAAA-MM-DD" em São Paulo
+  children?: React.ReactNode; // coluna da direita (lista de marcas), vinda do servidor
 }) {
   const router = useRouter();
 
-  // A tela trabalha numa cópia local: o item some na hora e a gravação acontece em
+  // A tela trabalha numa cópia local: o item é riscado na hora e a gravação acontece em
   // seguida. Se der erro, o item volta e a tela é recarregada do servidor.
   const [itens, setItens] = useState(doServidor);
   const [versaoDoServidor, setVersaoDoServidor] = useState(doServidor);
   const [gravacoesPendentes, setGravacoesPendentes] = useState(0);
+  // Itens recém-concluídos que ainda aparecem (riscados) até a animação acabar
+  const [saindo, setSaindo] = useState<Map<string, { item: Pendencia; fase: Fase }>>(
+    new Map(),
+  );
+  const temporizadores = useRef(new Map<string, number[]>());
   const [, iniciar] = useTransition();
 
   // Quando o servidor manda dados novos, a cópia local é substituída por eles, mas só
@@ -100,7 +144,19 @@ export function BlocosPainel({
     setItens(doServidor);
   }
 
-  function gravar(acao: () => Promise<Resultado>, desfazer: () => void) {
+  // Ao sair da tela, cancela as animações em andamento
+  useEffect(() => {
+    const mapa = temporizadores.current;
+    return () => {
+      mapa.forEach((ids) => ids.forEach((id) => window.clearTimeout(id)));
+    };
+  }, []);
+
+  function gravar(
+    acao: () => Promise<Resultado>,
+    desfazer: () => void,
+    aoGravar?: () => void,
+  ) {
     setGravacoesPendentes((n) => n + 1);
     iniciar(async () => {
       try {
@@ -109,6 +165,8 @@ export function BlocosPainel({
           toast.error(resultado.erro);
           desfazer();
           router.refresh();
+        } else {
+          aoGravar?.();
         }
       } catch {
         toast.error("Não foi possível salvar. Verifique a conexão e tente de novo.");
@@ -131,6 +189,7 @@ export function BlocosPainel({
 
   // Devolve o item ao estado de antes (se ele tinha sumido, volta no lugar certo)
   function restaurar(item: Pendencia) {
+    cancelarSaida(item.chave);
     setItens((atuais) =>
       atuais.some((i) => i.chave === item.chave)
         ? atuais.map((i) => (i.chave === item.chave ? item : i))
@@ -138,12 +197,63 @@ export function BlocosPainel({
     );
   }
 
+  function cancelarSaida(chave: string) {
+    temporizadores.current.get(chave)?.forEach((id) => window.clearTimeout(id));
+    temporizadores.current.delete(chave);
+    setSaindo((atuais) => {
+      if (!atuais.has(chave)) return atuais;
+      const novo = new Map(atuais);
+      novo.delete(chave);
+      return novo;
+    });
+  }
+
+  // Risca o item, depois some com ele. `reverter` é o que o "Desfazer" grava no banco.
+  function concluirComAnimacao(item: Pendencia, reverter: () => Promise<Resultado>) {
+    aplicar(item, null);
+    cancelarSaida(item.chave);
+    setSaindo((atuais) => new Map(atuais).set(item.chave, { item, fase: "riscado" }));
+
+    const t1 = window.setTimeout(() => {
+      setSaindo((atuais) =>
+        atuais.has(item.chave)
+          ? new Map(atuais).set(item.chave, { item, fase: "saindo" })
+          : atuais,
+      );
+    }, TEMPO_RISCADO);
+    const t2 = window.setTimeout(() => {
+      temporizadores.current.delete(item.chave);
+      setSaindo((atuais) => {
+        const novo = new Map(atuais);
+        novo.delete(item.chave);
+        return novo;
+      });
+    }, TEMPO_RISCADO + TEMPO_SUMIR);
+    temporizadores.current.set(item.chave, [t1, t2]);
+
+    toast(AVISO_DE_CONCLUSAO[item.tipo], {
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          restaurar(item);
+          gravar(reverter, () => aplicar(item, null));
+        },
+      },
+    });
+  }
+
   function marcar(item: Pendencia, marcado: boolean) {
     if (item.tipo === "recorrente") {
       // Só conclui (e some) com check marcado E valor real preenchido.
       // Sem valor real, o item fica com o aviso "Falta valor real".
       const concluiu = marcado && item.valorReal !== null;
-      aplicar(item, concluiu ? null : { ...item, checkMarcado: marcado });
+      if (concluiu) {
+        concluirComAnimacao(item, () =>
+          atualizarOcorrencia(item.id, { checkMarcado: false }),
+        );
+      } else {
+        aplicar(item, { ...item, checkMarcado: marcado });
+      }
       gravar(
         () => atualizarOcorrencia(item.id, { checkMarcado: marcado }),
         () => restaurar(item),
@@ -152,7 +262,7 @@ export function BlocosPainel({
     }
 
     if (!marcado) return;
-    aplicar(item, null);
+    concluirComAnimacao(item, () => reverterConclusao(item));
     gravar(
       () => gravarConclusao(item),
       () => restaurar(item),
@@ -161,153 +271,296 @@ export function BlocosPainel({
 
   function salvarValor(item: Pendencia, valorReal: number | null) {
     const concluiu = item.checkMarcado && valorReal !== null;
-    aplicar(item, concluiu ? null : { ...item, valorReal });
+    if (concluiu) {
+      concluirComAnimacao(item, () =>
+        atualizarOcorrencia(item.id, { valorReal: item.valorReal }),
+      );
+    } else {
+      aplicar(item, { ...item, valorReal });
+    }
     gravar(
       () => atualizarOcorrencia(item.id, { valorReal }),
       () => restaurar(item),
     );
   }
 
+  // O que aparece: os itens pendentes mais os que acabaram de ser concluídos (riscados)
+  const visiveis = ordenarPendencias([
+    ...itens,
+    ...[...saindo.values()].map((s) => s.item),
+  ]);
+
+  const porPeriodo = new Map<Bloco["periodo"], Pendencia[]>();
+  for (const bloco of BLOCOS) porPeriodo.set(bloco.periodo, []);
+  for (const item of visiveis) {
+    porPeriodo.get(classificar(item.data, hoje) as Bloco["periodo"])?.push(item);
+  }
+
+  // Números da faixa de resumo contam só o que ainda está pendente
+  const pendentes = (periodo: Bloco["periodo"]) =>
+    itens.filter((i) => classificar(i.data, hoje) === periodo);
+  const atrasadas = pendentes("atrasada");
+  const estaSemana = pendentes("esta_semana");
+  const proximaSemana = pendentes("proxima_semana");
+  const nfs = itens.filter((i) => i.tipo === "nf");
+  const maisAntiga = atrasadas.length
+    ? Math.max(...atrasadas.map((i) => diasAte(hoje, i.data)))
+    : 0;
+  const vencemHoje = estaSemana.filter((i) => i.data === hoje).length;
+  const domingo = domingoDaSemana(hoje);
+  const faixas: Record<Bloco["periodo"], string> = {
+    atrasada: "antes de hoje",
+    esta_semana: intervaloCurto(hoje, domingo),
+    proxima_semana: intervaloCurto(somarDias(domingo, 1), somarDias(domingo, 7)),
+  };
+
   return (
-    <div className="grid grid-cols-3 items-start gap-5">
-      {BLOCOS.map((bloco) => {
-        const doBloco = itens.filter(
-          (item) => classificar(item.data, hoje) === bloco.periodo,
-        );
+    <>
+      <p className="mt-1.5 text-muted-foreground">
+        {atrasadas.length === 0 && estaSemana.length === 0
+          ? "Nada atrasado nem vencendo esta semana."
+          : `${plural(atrasadas.length, "item atrasado", "itens atrasados")} e ${estaSemana.length} vencendo esta semana.`}
+      </p>
 
-        return (
-          <section
-            key={bloco.periodo}
-            aria-labelledby={`bloco-${bloco.periodo}`}
-            className={cn(
-              "overflow-hidden rounded-xl border bg-card shadow-xs",
-              bloco.periodo === "atrasada" && doBloco.length > 0 && "border-perigo-borda",
-            )}
-          >
-            <header
-              className={cn(
-                "flex items-center justify-between gap-3 px-4 py-3",
-                bloco.cabecalho,
-              )}
-            >
-              <h2
-                id={`bloco-${bloco.periodo}`}
-                className="flex items-center gap-2 text-lg font-semibold tracking-[-0.015em]"
+      {/* Faixa de resumo: cada número leva ao grupo correspondente */}
+      <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-lg border bg-card shadow-xs lg:grid-cols-4">
+        <ResumoLink
+          href="#grupo-atrasada"
+          rotulo="Atrasadas"
+          ponto="bg-danger"
+          numero={atrasadas.length}
+          sub={maisAntiga ? `mais antiga há ${plural(maisAntiga, "dia", "dias")}` : "nada atrasado"}
+          alerta={atrasadas.length > 0}
+        />
+        <ResumoLink
+          href="#grupo-esta_semana"
+          rotulo="Esta semana"
+          ponto="bg-warning"
+          numero={estaSemana.length}
+          sub={vencemHoje ? `${vencemHoje} ${vencemHoje === 1 ? "vence" : "vencem"} hoje` : faixas.esta_semana}
+        />
+        <ResumoLink
+          href="#grupo-proxima_semana"
+          rotulo="Próxima semana"
+          ponto="bg-border-strong"
+          numero={proximaSemana.length}
+          sub={faixas.proxima_semana}
+        />
+        <ResumoLink
+          href="#grupo-atrasada"
+          rotulo="NFs a lançar"
+          icone={Receipt}
+          numero={nfs.length}
+          sub={nfs.length ? `${nfs.filter((i) => i.data < hoje).length} atrasadas` : "nenhuma pendente"}
+        />
+      </div>
+
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_288px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {BLOCOS.map((bloco) => {
+            const doBloco = porPeriodo.get(bloco.periodo) ?? [];
+            const quantidade = pendentes(bloco.periodo).length;
+            const atrasado = bloco.periodo === "atrasada" && quantidade > 0;
+
+            return (
+              <section
+                key={bloco.periodo}
+                id={`grupo-${bloco.periodo}`}
+                aria-labelledby={`bloco-${bloco.periodo}`}
+                className={cn(
+                  "scroll-mt-20 overflow-hidden rounded-lg border bg-card shadow-xs",
+                  atrasado && "border-danger-border",
+                )}
               >
-                <span className={cn("size-2.5 rounded-full", bloco.ponto)} aria-hidden />
-                {bloco.titulo}
-              </h2>
-              <Badge variant={bloco.periodo === "atrasada" && doBloco.length > 0 ? "perigo" : "neutro"}>
-                {plural(doBloco.length, "item", "itens")}
-              </Badge>
-            </header>
+                <header
+                  className={cn(
+                    "flex h-10 items-center gap-2 border-b px-4 text-[13px]",
+                    atrasado
+                      ? "border-danger-border bg-danger-subtle text-danger-text"
+                      : "bg-muted",
+                  )}
+                >
+                  <span className={cn("size-[7px] rounded-full", bloco.ponto)} aria-hidden />
+                  <h2 id={`bloco-${bloco.periodo}`} className="font-semibold">
+                    {bloco.titulo}
+                  </h2>
+                  <span
+                    className={cn(
+                      "font-mono text-xs",
+                      !atrasado && "text-muted-foreground",
+                    )}
+                  >
+                    {quantidade}
+                  </span>
+                  <span
+                    className={cn(
+                      "num ml-auto text-xs",
+                      !atrasado && "text-muted-foreground",
+                    )}
+                  >
+                    {faixas[bloco.periodo]}
+                  </span>
+                </header>
 
-            {doBloco.length === 0 ? (
-              <div className="flex flex-col items-center gap-1 px-6 py-10 text-center">
-                <CircleCheck className="mb-1 size-8 text-sucesso" aria-hidden />
-                <p className="font-medium">{bloco.vazioTitulo}</p>
-                <p className="text-sm text-muted-foreground">{bloco.vazioTexto}</p>
-              </div>
-            ) : (
-              <ul className="divide-y">
-                {doBloco.map((item) => (
-                  <LinhaPendencia
-                    key={item.chave}
-                    item={item}
-                    atrasada={bloco.periodo === "atrasada"}
-                    aoMarcar={marcar}
-                    aoSalvarValor={salvarValor}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
-        );
-      })}
-    </div>
+                {doBloco.length === 0 ? (
+                  <p className="flex items-center gap-2 px-4 py-3.5 text-[13px] text-muted-foreground">
+                    <CircleCheck className="size-4 text-success" aria-hidden />
+                    {bloco.vazio}
+                  </p>
+                ) : (
+                  <ul>
+                    {doBloco.map((item) => (
+                      <LinhaPendencia
+                        key={item.chave}
+                        item={item}
+                        hoje={hoje}
+                        fase={saindo.get(item.chave)?.fase}
+                        aoMarcar={marcar}
+                        aoSalvarValor={salvarValor}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        {children}
+      </div>
+    </>
+  );
+}
+
+function ResumoLink({
+  href,
+  rotulo,
+  ponto,
+  icone: Icone,
+  numero,
+  sub,
+  alerta = false,
+}: {
+  href: string;
+  rotulo: string;
+  ponto?: string;
+  icone?: React.ElementType;
+  numero: number;
+  sub: string;
+  alerta?: boolean;
+}) {
+  return (
+    <a
+      href={href}
+      className={cn(
+        "block border-l px-4 py-3.5 transition-colors first:border-l-0 hover:bg-muted max-lg:nth-[n+3]:border-t max-lg:nth-[3]:border-l-0",
+        alerta && "bg-danger-subtle text-danger-text hover:bg-danger-subtle/70",
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-1.5 text-[12.5px]",
+          !alerta && "text-muted-foreground",
+        )}
+      >
+        {ponto && <span className={cn("size-[7px] rounded-full", ponto)} aria-hidden />}
+        {Icone && <Icone className="size-3" aria-hidden />}
+        {rotulo}
+      </div>
+      <div className="num mt-1.5 text-[28px] leading-[1.1] font-semibold tracking-[-0.04em]">
+        {numero}
+      </div>
+      <div className={cn("mt-0.5 text-xs", !alerta && "text-muted-foreground")}>{sub}</div>
+    </a>
   );
 }
 
 function LinhaPendencia({
   item,
-  atrasada,
+  hoje,
+  fase,
   aoMarcar,
   aoSalvarValor,
 }: {
   item: Pendencia;
-  atrasada: boolean;
+  hoje: string;
+  fase?: Fase; // definida quando o item acabou de ser concluído
   aoMarcar: (item: Pendencia, marcado: boolean) => void;
   aoSalvarValor: (item: Pendencia, valor: number | null) => void;
 }) {
-  const faltaValor = faltaValorReal(item);
+  const faltaValor = !fase && faltaValorReal(item);
+  const concluido = fase !== undefined;
+  const Icone = ICONES_DO_TIPO[item.tipo];
 
   return (
     <li
       className={cn(
-        "relative flex gap-3 px-4 py-3 transition-colors",
-        faltaValor
-          ? "bg-atencao-fundo/50 hover:bg-atencao-fundo/70"
-          : "hover:bg-muted/40",
+        "relative grid min-h-[52px] grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-t border-border-subtle px-4 py-2 transition-[background,opacity] duration-200 ease-out first:border-t-0",
+        faltaValor ? "bg-warning-subtle/60 hover:bg-warning-subtle" : "hover:bg-row-hover",
+        fase === "saindo" && "opacity-0",
       )}
     >
       {/* z-10: o check fica por cima do link que cobre a linha inteira */}
-      <div className="relative z-10 pt-0.5">
+      <div className="relative z-10">
         <Checkbox
-          checked={item.tipo === "recorrente" && item.checkMarcado}
+          checked={concluido || (item.tipo === "recorrente" && item.checkMarcado)}
+          disabled={concluido}
           onCheckedChange={(marcado) => aoMarcar(item, marcado === true)}
           aria-label={`Concluir "${item.titulo}"`}
         />
       </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant="neutro">{ROTULOS_DO_TIPO[item.tipo]}</Badge>
-          {item.tipo === "nf" && (
-            <Badge variant="perigo">
-              <span className="size-1.5 rounded-full bg-perigo" aria-hidden />
-              Lançamento pendente
-            </Badge>
-          )}
-          {faltaValor && <Badge variant="atencao">Falta valor real</Badge>}
-        </div>
-
-        {/* O link cobre a linha toda (after:inset-0): clicar em qualquer ponto abre o item */}
-        <Link
-          href={enderecoDaPendencia(item)}
-          className="mt-1.5 block leading-5 font-medium hover:text-primary after:absolute after:inset-0"
-        >
-          {item.titulo}
-        </Link>
-
-        <div className="mt-1.5 flex flex-col gap-0.5 text-xs text-muted-foreground">
-          <span
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          {/* O link cobre a linha toda (after:inset-0): clicar em qualquer ponto abre o item */}
+          <Link
+            href={enderecoDaPendencia(item)}
             className={cn(
-              "inline-flex items-center gap-1.5 tabular-nums",
-              atrasada && "font-medium text-perigo",
+              "truncate text-[13.5px] font-medium after:absolute after:inset-0 hover:underline hover:underline-offset-3",
+              concluido && "text-muted-foreground line-through decoration-border-strong",
             )}
           >
-            <CalendarDays className="size-3.5" aria-hidden />
-            {atrasada ? "Venceu em " : ""}
-            {formatarData(item.data)}
-          </span>
-          <span>
-            {item.marcaNome}
-            {item.eventoNome && ` • ${item.eventoNome}`}
-          </span>
+            {item.titulo}
+          </Link>
+          {item.tipo === "nf" && !concluido && (
+            <StatusBadge tone="danger" className="h-5 text-[11.5px]">
+              Lançamento pendente
+            </StatusBadge>
+          )}
+          {faltaValor && (
+            <StatusBadge tone="warning" className="h-5 text-[11.5px]">
+              Falta valor real
+            </StatusBadge>
+          )}
         </div>
-
-        {faltaValor && (
-          <div className="relative z-10 mt-2.5 flex items-center gap-2">
-            <span className="text-xs font-medium text-atencao">Inserir valor:</span>
-            <CampoValor
-              rotulo={`Valor real de ${item.titulo}`}
-              valor={item.valorReal}
-              destaque
-              onSalvar={(valor) => aoSalvarValor(item, valor)}
-            />
-          </div>
-        )}
+        <div className="mt-0.5 truncate text-xs text-muted-foreground">
+          {item.marcaNome}
+          {item.eventoNome && ` · ${item.eventoNome}`}
+        </div>
       </div>
+
+      <div className="flex items-center gap-3">
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Icone className="size-3" aria-hidden />
+          {ROTULOS_DO_TIPO[item.tipo]}
+        </span>
+        {item.valorReal !== null && (
+          <Money value={item.valorReal} className="text-[13px] text-muted-foreground" />
+        )}
+        <DateChip data={item.data} concluido={concluido} hoje={hoje} />
+      </div>
+
+      {faltaValor && (
+        <div className="relative z-10 col-start-2 col-end-4 flex items-center gap-2">
+          <span className="text-xs font-medium text-warning-text">Inserir valor:</span>
+          <CampoValor
+            rotulo={`Valor real de ${item.titulo}`}
+            valor={item.valorReal}
+            destaque
+            onSalvar={(valor) => aoSalvarValor(item, valor)}
+          />
+        </div>
+      )}
     </li>
   );
 }

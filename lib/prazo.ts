@@ -40,3 +40,20 @@ export function contagemDeDias(data: string, hoje: string): string {
   if (dias === -1) return "ontem";
   return dias > 0 ? `em ${dias} dias` : `há ${-dias} dias`;
 }
+
+const MES_CURTO = new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" });
+
+function mesCurto(data: string): string {
+  const [ano, mes, dia] = data.split("-").map(Number);
+  return MES_CURTO.format(new Date(Date.UTC(ano, mes - 1, dia))).replace(".", "");
+}
+
+// "2026-11-15","2026-11-22" → "15 – 22 nov"; entre meses: "30 nov – 6 dez"
+export function intervaloCurto(inicio: string, fim: string): string {
+  const diaInicio = Number(inicio.slice(8, 10));
+  const diaFim = Number(fim.slice(8, 10));
+  if (inicio.slice(0, 7) === fim.slice(0, 7)) {
+    return `${diaInicio} – ${diaFim} ${mesCurto(fim)}`;
+  }
+  return `${diaInicio} ${mesCurto(inicio)} – ${diaFim} ${mesCurto(fim)}`;
+}
