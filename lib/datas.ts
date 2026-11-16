@@ -119,3 +119,8 @@ export function classificar(data: string, hoje: string): Periodo {
   if (data <= somarDias(domingoAtual, 7)) return "proxima_semana";
   return "depois";
 }
+
+// Quantos dias faltam de "hoje" até a data (negativo = já passou). Ambas "AAAA-MM-DD".
+export function diasAte(data: string, hoje: string): number {
+  return Math.round((paraDate(data).getTime() - paraDate(hoje).getTime()) / 86_400_000);
+}
