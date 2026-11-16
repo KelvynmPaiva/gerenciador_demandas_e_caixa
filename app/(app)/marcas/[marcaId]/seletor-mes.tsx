@@ -18,7 +18,7 @@ export function SeletorMes({
   const base = `/marcas/${marcaId}`;
   const filtro = eventosArquivados ? "&eventos=arquivados" : "";
   const estiloSeta =
-    "flex size-9 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-primary";
+    "flex size-9 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-brand";
 
   return (
     <div className="flex items-center gap-3">
@@ -45,7 +45,7 @@ export function SeletorMes({
       {mes !== mesAtual && (
         <Link
           href={eventosArquivados ? `${base}?eventos=arquivados` : base}
-          className="text-sm font-medium text-primary hover:underline"
+          className="text-sm font-medium text-brand hover:underline"
         >
           Voltar ao mês atual
         </Link>

@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { Pagina } from "@/components/pagina";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import {
   diaDaSemanaPorExtenso,
   fimDaProximaSemana,
@@ -15,6 +14,7 @@ import {
   type Pendencia,
 } from "@/lib/pendencias";
 import { listarMarcasAtivas } from "@/lib/marcas";
+import { rotuloRelativo } from "@/lib/prazo";
 import { createClient } from "@/lib/supabase/server";
 import { BlocosPainel } from "./blocos-painel";
 
@@ -81,77 +81,91 @@ export default async function PainelPage() {
     });
   }
 
-  // Quantas pendências cada marca tem (mesma conta da tela Marcas)
-  const pendenciasPorMarca = new Map<string, number>();
+  // Por marca: quantas pendências, quantas atrasadas e a data da mais próxima
+  // (mesma conta da tela Marcas)
+  const porMarca = new Map<string, { qtd: number; atrasadas: number; proxima: string }>();
   for (const item of itens) {
-    pendenciasPorMarca.set(
-      item.marcaId,
-      (pendenciasPorMarca.get(item.marcaId) ?? 0) + 1,
-    );
+    const atual = porMarca.get(item.marcaId) ?? { qtd: 0, atrasadas: 0, proxima: item.data };
+    atual.qtd += 1;
+    if (item.data < hoje) atual.atrasadas += 1;
+    if (item.data < atual.proxima) atual.proxima = item.data;
+    porMarca.set(item.marcaId, atual);
   }
+  // Quem tem mais atraso aparece primeiro; depois mais pendências; depois ordem alfabética
+  const marcasOrdenadas = [...listaDeMarcas].sort((a, b) => {
+    const ra = porMarca.get(a.id);
+    const rb = porMarca.get(b.id);
+    return (
+      (rb?.atrasadas ?? 0) - (ra?.atrasadas ?? 0) ||
+      (rb?.qtd ?? 0) - (ra?.qtd ?? 0) ||
+      a.nome.localeCompare(b.nome, "pt-BR")
+    );
+  });
 
   const diaDaSemana = diaDaSemanaPorExtenso(hoje);
 
   return (
     <Pagina breadcrumb={[{ rotulo: "Painel" }]}>
-      <div className="mb-6 border-b pb-5">
-        <h1 className="text-[30px] font-semibold leading-[38px] tracking-[-0.02em]">
-          {saudacao()}, equipe
-        </h1>
-        <p className="mt-1 text-muted-foreground">
+      <div className="mx-auto max-w-[1080px]">
+        <p className="text-xs text-muted-foreground">
           {diaDaSemana.charAt(0).toUpperCase() + diaDaSemana.slice(1)},{" "}
           {formatarData(hoje)}
         </p>
+        <h1 className="text-display mt-1">{saudacao()}, equipe</h1>
+
+        <BlocosPainel pendencias={ordenarPendencias(itens)} hoje={hoje}>
+          <aside aria-labelledby="marcas-do-painel" className="rounded-lg border bg-card shadow-xs">
+            <div className="flex items-center px-4 pt-3 pb-1.5">
+              <h2 id="marcas-do-painel" className="text-sm font-semibold">
+                Marcas
+              </h2>
+              <Link
+                href="/marcas"
+                className="ml-auto text-[12.5px] font-medium text-brand hover:underline"
+              >
+                Ver todas
+              </Link>
+            </div>
+            {marcasOrdenadas.length === 0 ? (
+              <p className="px-4 py-4 text-[13px] text-muted-foreground">
+                Nenhuma marca ativa. Crie a primeira na tela Marcas.
+              </p>
+            ) : (
+              <ul className="pb-1.5">
+                {marcasOrdenadas.map((marca) => {
+                  const resumo = porMarca.get(marca.id);
+                  return (
+                    <li key={marca.id}>
+                      <Link
+                        href={`/marcas/${marca.id}`}
+                        className="grid grid-cols-[1fr_auto] items-center gap-x-2 px-4 py-2 transition-colors hover:bg-row-hover"
+                      >
+                        <span className="truncate text-[13px] font-semibold uppercase tracking-wide">
+                          {marca.nome}
+                        </span>
+                        {resumo && resumo.atrasadas > 0 ? (
+                          <StatusBadge tone="danger" className="h-5">
+                            {plural(resumo.atrasadas, "atrasada", "atrasadas")}
+                          </StatusBadge>
+                        ) : (
+                          <StatusBadge tone="success" className="h-5">
+                            Em dia
+                          </StatusBadge>
+                        )}
+                        <span className="col-span-2 text-xs text-muted-foreground">
+                          {resumo
+                            ? `${plural(resumo.qtd, "pendência", "pendências")} · próx. ${rotuloRelativo(resumo.proxima, hoje).toLowerCase()}`
+                            : "Nada pendente"}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </aside>
+        </BlocosPainel>
       </div>
-
-      <BlocosPainel pendencias={ordenarPendencias(itens)} hoje={hoje} />
-
-      <section className="mt-12" aria-labelledby="atalho-marcas">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <h2
-            id="atalho-marcas"
-            className="text-2xl font-semibold leading-8 tracking-[-0.02em]"
-          >
-            Atalho para Marcas
-          </h2>
-          <Link
-            href="/marcas"
-            className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-          >
-            Ver todas as marcas <ArrowRight className="size-4" />
-          </Link>
-        </div>
-
-        {listaDeMarcas.length === 0 ? (
-          <p className="text-muted-foreground">
-            Nenhuma marca ativa. Crie a primeira na tela Marcas.
-          </p>
-        ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-5">
-            {listaDeMarcas.map((marca) => {
-              const qtd = pendenciasPorMarca.get(marca.id) ?? 0;
-              return (
-                <Link
-                  key={marca.id}
-                  href={`/marcas/${marca.id}`}
-                  className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs transition-colors hover:border-primary/40 hover:bg-muted/30"
-                >
-                  <span className="truncate text-lg font-semibold tracking-[-0.015em]">
-                    {marca.nome}
-                  </span>
-                  {qtd > 0 ? (
-                    <Badge variant="perigo">
-                      {plural(qtd, "pendência", "pendências")}
-                    </Badge>
-                  ) : (
-                    <Badge variant="sucesso">Em dia</Badge>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </section>
     </Pagina>
   );
 }

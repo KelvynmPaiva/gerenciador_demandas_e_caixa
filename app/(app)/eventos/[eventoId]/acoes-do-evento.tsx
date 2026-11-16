@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Archive, ArchiveRestore, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DialogoConfirmar } from "@/components/dialogo-confirmar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { arquivarEvento, excluirEvento } from "../actions";
 import { DialogoEvento, type EventoParaEdicao } from "../dialogo-evento";
 
-// Botões do topo da página do evento: Editar, Arquivar/Desarquivar e Excluir.
+// Botões da barra do topo do evento: Editar e Arquivar/Desarquivar; Excluir fica no menu "…".
 export function AcoesDoEvento({
   evento,
   arquivado,
@@ -47,24 +53,34 @@ export function AcoesDoEvento({
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-2">
-      <Button variant="outline" onClick={() => setEditando(true)}>
-        <Pencil /> Editar evento
+    <>
+      <Button variant="outline" size="sm" className="max-md:hidden" onClick={() => setEditando(true)}>
+        <Pencil data-icon="inline-start" /> Editar
       </Button>
-      <Button variant="outline" onClick={alternarArquivo} disabled={ocupado}>
-        {arquivado ? <ArchiveRestore /> : <Archive />}
+      <Button variant="outline" size="sm" className="max-md:hidden" onClick={alternarArquivo} disabled={ocupado}>
+        {arquivado ? <ArchiveRestore data-icon="inline-start" /> : <Archive data-icon="inline-start" />}
         {arquivado ? "Desarquivar" : "Arquivar"}
       </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        aria-label="Excluir evento"
-        title="Excluir evento"
-        className="text-perigo hover:bg-perigo-fundo hover:text-perigo"
-        onClick={() => setExcluindo(true)}
-      >
-        <Trash2 />
-      </Button>
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm" aria-label="Mais ações do evento" title="Mais ações">
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          {/* No celular os botões do topo somem; as ações vêm para o menu */}
+          <DropdownMenuItem className="md:hidden" onSelect={() => setEditando(true)}>
+            <Pencil /> Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem className="md:hidden" disabled={ocupado} onSelect={alternarArquivo}>
+            {arquivado ? <ArchiveRestore /> : <Archive />}
+            {arquivado ? "Desarquivar" : "Arquivar"}
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={() => setExcluindo(true)}>
+            <Trash2 /> Excluir evento
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <DialogoEvento aberto={editando} aoMudar={setEditando} evento={evento} />
       <DialogoConfirmar
@@ -77,6 +93,6 @@ export function AcoesDoEvento({
         carregando={ocupado}
         aoConfirmar={confirmarExclusao}
       />
-    </div>
+    </>
   );
 }

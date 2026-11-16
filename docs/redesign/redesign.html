@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repaginação · Gerenciador de tarefas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== Tokens (idênticos a globals.css) ===== */
+:root{
+  --background:oklch(0.975 0.003 260);
+  --foreground:oklch(0.205 0.012 265);
+  --card:oklch(0.998 0.001 260);
+  --popover:oklch(0.998 0.001 260);
+  --primary:oklch(0.235 0.014 265);
+  --primary-hover:oklch(0.32 0.014 265);
+  --primary-foreground:oklch(0.985 0.002 260);
+  --secondary:oklch(0.962 0.004 260);
+  --muted:oklch(0.965 0.004 260);
+  --muted-foreground:oklch(0.49 0.014 262);
+  --subtle-foreground:oklch(0.6 0.012 262);
+  --accent:oklch(0.955 0.005 260);
+  --border:oklch(0.915 0.005 260);
+  --border-subtle:oklch(0.945 0.004 260);
+  --border-strong:oklch(0.86 0.007 260);
+  --input:oklch(0.86 0.007 260);
+  --control-border:oklch(0.66 0.01 260);
+  --ring:oklch(0.55 0.17 258);
+  --brand:oklch(0.52 0.175 258);
+  --brand-subtle:oklch(0.96 0.025 258);
+  --brand-text:oklch(0.45 0.16 258);
+  --danger:oklch(0.55 0.2 27);
+  --danger-subtle:oklch(0.97 0.018 25);
+  --danger-border:oklch(0.89 0.05 25);
+  --danger-text:oklch(0.5 0.19 27);
+  --warning:oklch(0.76 0.15 70);
+  --warning-subtle:oklch(0.975 0.03 85);
+  --warning-border:oklch(0.89 0.07 80);
+  --warning-text:oklch(0.5 0.11 60);
+  --success:oklch(0.6 0.14 152);
+  --success-subtle:oklch(0.97 0.025 155);
+  --success-border:oklch(0.88 0.06 155);
+  --success-text:oklch(0.47 0.11 152);
+  --row-hover:oklch(0.98 0.003 260);
+  --doc-bg:oklch(0.93 0.004 260);
+  --brand-border:oklch(0.86 0.07 258);
+  --danger-solid:oklch(0.55 0.2 27);
+  --on-status:oklch(0.99 0 0);
+  --overlay:oklch(0.2 0.01 260 / .28);
+  --dot:oklch(0.2 0.01 260 / .07);
+  --toast-bg:oklch(0.235 0.014 265);
+  --toast-fg:oklch(0.985 0.002 260);
+  --toast-border:transparent;
+  --toast-ok:oklch(0.8 0.14 152);
+  --toast-action:oklch(0.85 0.06 258);
+  --btn-primary-shadow:inset 0 1px 0 oklch(1 0 0 / .1),0 1px 2px oklch(0.2 0.01 260 / .2);
+  --radius:0.5rem;
+  --shadow-xs:0 1px 0 oklch(0.2 0.01 260 / .04);
+  --shadow-sm:0 1px 2px oklch(0.2 0.01 260 / .06), 0 0 0 1px oklch(0.2 0.01 260 / .04);
+  --shadow-overlay:0 0 0 1px oklch(0.2 0.01 260 / .06), 0 8px 16px -4px oklch(0.2 0.01 260 / .10), 0 24px 48px -12px oklch(0.2 0.01 260 / .18);
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --dur-fast:120ms; --dur:180ms;
+  --font-sans:'Geist',ui-sans-serif,system-ui,sans-serif;
+  --font-mono:'Geist Mono',ui-monospace,monospace;
+}
+
+/* ===== Tema escuro (idêntico ao .dark de globals.css) ===== */
+html.dark{
+  color-scheme:dark;
+  --background:oklch(0.16 0.006 265);
+  --foreground:oklch(0.955 0.003 260);
+  --card:oklch(0.195 0.007 265);
+  --popover:oklch(0.215 0.008 265);
+  --primary:oklch(0.95 0.003 260);
+  --primary-hover:oklch(0.86 0.005 260);
+  --primary-foreground:oklch(0.18 0.007 265);
+  --secondary:oklch(0.24 0.008 265);
+  --muted:oklch(0.23 0.008 265);
+  --muted-foreground:oklch(0.72 0.01 262);
+  --subtle-foreground:oklch(0.56 0.01 262);
+  --accent:oklch(0.25 0.008 265);
+  --border:oklch(0.29 0.008 265);
+  --border-subtle:oklch(0.245 0.008 265);
+  --border-strong:oklch(0.35 0.009 265);
+  --input:oklch(0.34 0.009 265);
+  --control-border:oklch(0.52 0.01 262);
+  --ring:oklch(0.7 0.14 258);
+  --brand:oklch(0.72 0.14 258);
+  --brand-subtle:oklch(0.27 0.06 258);
+  --brand-border:oklch(0.4 0.1 258);
+  --brand-text:oklch(0.82 0.09 258);
+  --danger:oklch(0.66 0.19 25);
+  --danger-solid:oklch(0.58 0.2 25);
+  --danger-subtle:oklch(0.235 0.045 25);
+  --danger-border:oklch(0.4 0.11 25);
+  --danger-text:oklch(0.78 0.13 25);
+  --warning:oklch(0.78 0.14 75);
+  --warning-subtle:oklch(0.26 0.05 75);
+  --warning-border:oklch(0.42 0.08 75);
+  --warning-text:oklch(0.84 0.12 80);
+  --success:oklch(0.7 0.15 152);
+  --success-subtle:oklch(0.25 0.045 155);
+  --success-border:oklch(0.4 0.08 155);
+  --success-text:oklch(0.8 0.12 152);
+  --on-status:oklch(0.18 0.007 265);
+  --row-hover:oklch(0.215 0.008 265);
+  --doc-bg:oklch(0.11 0.005 265);
+  --overlay:oklch(0.05 0.005 265 / .6);
+  --dot:oklch(1 0 0 / .06);
+  --toast-bg:oklch(0.27 0.008 265);
+  --toast-fg:oklch(0.955 0.003 260);
+  --toast-border:oklch(0.35 0.009 265);
+  --toast-ok:oklch(0.75 0.15 152);
+  --toast-action:oklch(0.8 0.1 258);
+  --btn-primary-shadow:0 1px 2px oklch(0 0 0 / .4);
+  --shadow-xs:0 1px 0 oklch(0 0 0 / .25);
+  --shadow-sm:0 1px 2px oklch(0 0 0 / .35),0 0 0 1px oklch(1 0 0 / .04);
+  --shadow-overlay:0 0 0 1px oklch(1 0 0 / .07),0 8px 16px -4px oklch(0 0 0 / .4),0 24px 48px -12px oklch(0 0 0 / .6);
+}
+html{transition:background-color var(--dur) var(--ease-out)}
+.nav-a.on{box-shadow:var(--shadow-sm)}
+html.dark .nav-a.on{background:var(--muted)}
+/* toggle de tema */
+.theme-tg{display:inline-flex;padding:2px;border-radius:8px;background:var(--muted);border:1px solid var(--border)}
+.theme-tg button{width:26px;height:22px;border-radius:6px;display:grid;place-items:center;color:var(--muted-foreground);transition:background var(--dur-fast),color var(--dur-fast)}
+.theme-tg button:hover{color:var(--foreground)}
+.theme-tg button[aria-pressed=true]{background:var(--card);color:var(--foreground);box-shadow:var(--shadow-sm)}
+.doc-nav .theme-tg{margin-left:auto;background:oklch(0.24 0.008 265);border-color:oklch(0.3 0.01 265)}
+.doc-nav .theme-tg button{width:28px;height:24px;padding:0;color:oklch(0.75 0.01 260)}
+.doc-nav .theme-tg button[aria-pressed=true]{background:oklch(0.34 0.012 265);color:oklch(0.97 0.002 260);box-shadow:none}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-sans);font-size:14px;line-height:1.45;color:var(--foreground);background:var(--doc-bg);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:inherit}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+svg.i.s{width:14px;height:14px} svg.i.xs{width:12px;height:12px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--font-mono);font-size:12px;letter-spacing:0}
+.muted{color:var(--muted-foreground)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== Doc chrome (não faz parte do app) ===== */
+.doc-nav{position:sticky;top:0;z-index:50;display:flex;gap:4px;align-items:center;padding:10px 20px;background:oklch(0.18 0.008 265);color:oklch(0.97 0.002 260);border-bottom:1px solid oklch(0.27 0.008 265);overflow-x:auto}
+.doc-nav b{font-weight:600;margin-right:16px;white-space:nowrap;font-size:13px}
+.doc-nav button{padding:6px 10px;border-radius:6px;font-size:13px;color:oklch(0.8 0.01 260);white-space:nowrap}
+.doc-nav button[aria-selected=true]{background:oklch(0.3 0.012 265);color:oklch(0.97 0.002 260)}
+.doc-page{display:none;padding:24px}
+.doc-page.on{display:block}
+.doc-wrap{max-width:1440px;margin:0 auto}
+.doc-h{font-size:13px;color:var(--muted-foreground);margin:0 0 12px;display:flex;gap:8px;align-items:center}
+.doc-h b{color:var(--foreground);font-weight:600}
+
+/* ===== Shell ===== */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:820px;background:var(--background);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.side{display:flex;flex-direction:column;padding:12px 10px;gap:2px}
+.logo{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+.logo-mark{width:26px;height:26px;border-radius:7px;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;font-weight:600;font-size:13px;letter-spacing:-.02em}
+.logo-t{font-weight:600;font-size:13.5px;letter-spacing:-.01em;line-height:1.2}
+.logo-s{font-size:11.5px;color:var(--muted-foreground)}
+.nav-a{display:flex;align-items:center;gap:9px;height:30px;padding:0 8px;border-radius:6px;color:var(--muted-foreground);font-size:13.5px;font-weight:500;text-decoration:none;transition:background var(--dur-fast) var(--ease-out),color var(--dur-fast)}
+.nav-a:hover{background:var(--accent);color:var(--foreground)}
+.nav-a.on{background:var(--card);color:var(--foreground);box-shadow:var(--shadow-sm)}
+.nav-a .cnt{margin-left:auto;font-family:var(--font-mono);font-size:11.5px;color:var(--muted-foreground)}
+.nav-a .cnt.red{color:var(--danger-text);font-weight:500}
+.nav-label{font-size:11.5px;color:var(--muted-foreground);padding:16px 8px 6px;font-weight:500}
+.nav-a .bd{width:6px;height:6px;border-radius:50%;background:var(--border-strong);margin:0 3px}
+.nav-a .bd.red{background:var(--danger)} .nav-a .bd.amb{background:var(--warning)}
+.side-foot{margin-top:auto;display:flex;align-items:center;gap:8px;padding:8px;border-top:1px solid var(--border);padding-top:12px}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--muted);border:1px solid var(--border);display:grid;place-items:center;font-size:11px;font-weight:600;color:var(--muted-foreground)}
+.side-foot .em{font-size:12px;color:var(--muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sheet{margin:8px 8px 8px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.topbar{height:48px;flex:none;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px}
+.crumbs{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted-foreground)}
+.crumbs a{color:inherit;text-decoration:none;border-radius:4px}.crumbs a:hover{color:var(--foreground)}
+.crumbs .cur{color:var(--foreground);font-weight:500}
+.topbar .sp{flex:1}
+.content{padding:28px 32px 56px;width:100%;max-width:1160px;margin:0 auto}
+
+/* ===== Tipografia ===== */
+.t-display{font-size:30px;line-height:1.1;font-weight:600;letter-spacing:-.035em}
+.t-title{font-size:24px;line-height:1.15;font-weight:600;letter-spacing:-.03em}
+.t-h2{font-size:16px;line-height:1.3;font-weight:600;letter-spacing:-.015em}
+.t-body{font-size:14px}
+.t-sm{font-size:13px}
+.t-xs{font-size:12px}
+.eyebrow{font-size:12px;font-weight:500;color:var(--muted-foreground);display:flex;gap:6px;align-items:center}
+
+/* ===== Botões ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border-radius:7px;font-size:13px;font-weight:500;border:1px solid transparent;white-space:nowrap;transition:background var(--dur-fast) var(--ease-out),border-color var(--dur-fast),box-shadow var(--dur-fast),transform var(--dur-fast)}
+.btn:active{transform:translateY(.5px) scale(.99)}
+.btn-primary{background:var(--primary);color:var(--primary-foreground);box-shadow:var(--btn-primary-shadow)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-outline{background:var(--card);border-color:var(--border-strong);box-shadow:var(--shadow-xs)}
+.btn-outline:hover{background:var(--muted)}
+.btn-ghost{color:var(--muted-foreground)}.btn-ghost:hover{background:var(--accent);color:var(--foreground)}
+.btn-danger{background:var(--danger-solid);color:oklch(0.99 0 0)}.btn-danger:hover{background:color-mix(in oklch,var(--danger-solid),black 10%)}
+.btn-link{color:var(--brand);padding:0;height:auto}.btn-link:hover{text-decoration:underline;text-underline-offset:3px}
+.btn-sm{height:28px;padding:0 10px;font-size:12.5px;border-radius:6px}
+.btn-lg{height:38px;padding:0 16px;font-size:14px}
+.btn-icon{width:32px;padding:0}.btn-sm.btn-icon{width:28px}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.kbd{font-family:var(--font-mono);font-size:11px;padding:1px 5px;border-radius:4px;border:1px solid currentColor;opacity:.45}
+
+/* ===== Inputs ===== */
+.field{display:flex;flex-direction:column;gap:6px}
+.label{font-size:13px;font-weight:500}
+.hint{font-size:12px;color:var(--muted-foreground)}
+.input{height:34px;width:100%;padding:0 10px;border-radius:7px;border:1px solid var(--input);background:var(--card);font-size:13.5px;box-shadow:var(--shadow-xs);transition:border-color var(--dur-fast),box-shadow var(--dur-fast)}
+.input::placeholder{color:var(--subtle-foreground)}
+.input:hover{border-color:var(--control-border)}
+.input:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in oklch,var(--ring) 22%,transparent)}
+.input.err{border-color:var(--danger);box-shadow:0 0 0 3px color-mix(in oklch,var(--danger) 16%,transparent)}
+.input[disabled]{background:var(--muted);color:var(--muted-foreground)}
+.err-msg{font-size:12px;color:var(--danger-text);display:flex;gap:5px;align-items:center}
+/* célula editável inline: parece texto, vira input no hover/foco */
+.cell-in{height:30px;width:100%;border:1px solid transparent;border-radius:6px;background:transparent;padding:0 8px;font-size:13px;transition:border-color var(--dur-fast),background var(--dur-fast)}
+.cell-in:hover{border-color:var(--border-strong);background:var(--card)}
+.cell-in:focus{outline:none;border-color:var(--ring);background:var(--card);box-shadow:0 0 0 3px color-mix(in oklch,var(--ring) 22%,transparent)}
+.cell-in.money{text-align:right;font-variant-numeric:tabular-nums}
+.cell-in::placeholder{color:var(--subtle-foreground)}
+
+/* ===== Checkbox ===== */
+.cb{width:16px;height:16px;flex:none;border:1.5px solid var(--control-border);border-radius:5px;display:grid;place-items:center;background:var(--card);transition:background var(--dur-fast) var(--ease-out),border-color var(--dur-fast),transform var(--dur) var(--ease-out)}
+.cb svg{width:11px;height:11px;stroke:var(--on-status);stroke-width:3;fill:none;stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset var(--dur) var(--ease-out)}
+.cb:hover{border-color:var(--foreground)}
+.cb.on{background:var(--success);border-color:var(--success)}
+.cb.on svg{stroke-dashoffset:0}
+.cb.pop{animation:pop .28s var(--ease-out)}
+@keyframes pop{40%{transform:scale(1.18)}}
+
+/* ===== Switch ===== */
+.switch{width:30px;height:18px;border-radius:999px;background:var(--border-strong);position:relative;transition:background var(--dur-fast)}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px oklch(0 0 0/.3);transition:transform var(--dur) var(--ease-out)}
+.switch.on{background:var(--primary)}.switch.on::after{transform:translateX(12px)}
+
+/* ===== Badges ===== */
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--muted);color:var(--muted-foreground);white-space:nowrap}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-danger{background:var(--danger-subtle);border-color:var(--danger-border);color:var(--danger-text)}
+.b-warning{background:var(--warning-subtle);border-color:var(--warning-border);color:var(--warning-text)}
+.b-warning .dot{background:var(--warning)}
+.b-success{background:var(--success-subtle);border-color:var(--success-border);color:var(--success-text)}
+.b-brand{background:var(--brand-subtle);border-color:var(--brand-border);color:var(--brand-text)}
+.b-outline{background:transparent}
+.tag{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border-radius:5px;font-size:11.5px;font-weight:500;color:var(--muted-foreground);background:var(--muted);white-space:nowrap}
+/* chip de data: cor = urgência */
+.date{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted-foreground);white-space:nowrap;font-variant-numeric:tabular-nums}
+.date b{font-weight:500}
+.date.over{color:var(--danger-text)}
+.date.today{color:var(--warning-text)}
+.date.none{color:var(--subtle-foreground)}
+
+/* ===== Cards / superfícies ===== */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-xs)}
+.sec-h{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.sec-h .sp{flex:1}
+
+/* ===== Tabela ===== */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.tbl th{font-size:12px;font-weight:500;color:var(--muted-foreground);text-align:left;padding:0 12px;height:34px;background:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl th:first-child{border-top-left-radius:10px}.tbl th:last-child{border-top-right-radius:10px}
+.tbl td{padding:0 12px;height:44px;border-bottom:1px solid var(--border-subtle);vertical-align:middle}
+.tbl td:has(.cell-in){padding:0 4px}
+.tbl tbody tr{transition:background var(--dur-fast)}
+.tbl tbody tr:hover{background:var(--row-hover)}
+.tbl .r{text-align:right}
+.tbl td.r{font-variant-numeric:tabular-nums}
+.tbl tfoot td{height:44px;background:var(--muted);font-weight:500;border-bottom:0}
+.tbl tfoot td:first-child{border-bottom-left-radius:10px}.tbl tfoot td:last-child{border-bottom-right-radius:10px}
+.tbl .act{opacity:0;transition:opacity var(--dur-fast)}
+.tbl tr:hover .act,.tbl tr:focus-within .act{opacity:1}
+.tbl tr.done td{color:var(--muted-foreground)}
+
+/* ===== Abas (linha) ===== */
+.tabs{display:flex;gap:20px;border-bottom:1px solid var(--border)}
+.tab{position:relative;display:flex;align-items:center;gap:8px;height:40px;font-size:13.5px;font-weight:500;color:var(--muted-foreground);transition:color var(--dur-fast)}
+.tab:hover{color:var(--foreground)}
+.tab[aria-selected=true]{color:var(--foreground)}
+.tab[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--brand);border-radius:2px}
+.tab .c{font-family:var(--font-mono);font-size:11.5px;padding:0 6px;height:18px;line-height:18px;border-radius:5px;background:var(--muted);color:var(--muted-foreground)}
+.tab .c.red{background:var(--danger-subtle);color:var(--danger-text)}
+
+/* ===== Segmented ===== */
+.seg{display:inline-flex;padding:2px;background:var(--muted);border-radius:8px;border:1px solid var(--border)}
+.seg button{height:26px;padding:0 10px;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--muted-foreground)}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--foreground);box-shadow:var(--shadow-sm)}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:7px;height:32px;background:var(--card);box-shadow:var(--shadow-xs)}
+.stepper button{width:30px;height:30px;display:grid;place-items:center;color:var(--muted-foreground);border-radius:6px}
+.stepper button:hover{color:var(--foreground);background:var(--muted)}
+.stepper span{padding:0 8px;font-size:13px;font-weight:500;min-width:120px;text-align:center}
+
+/* ===== Painel ===== */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)}
+.strip a{display:block;padding:14px 16px;text-decoration:none;color:inherit;border-left:1px solid var(--border);transition:background var(--dur-fast)}
+.strip a:first-child{border-left:0}
+.strip a:hover{background:var(--muted)}
+.strip .n{font-size:28px;font-weight:600;letter-spacing:-.04em;line-height:1.1;font-variant-numeric:tabular-nums;margin-top:6px}
+.strip .l{font-size:12.5px;color:var(--muted-foreground);display:flex;align-items:center;gap:6px}
+.strip .l .dot{width:7px;height:7px;border-radius:50%}
+.strip .over{background:var(--danger-subtle)}
+.strip .over .n,.strip .over .l{color:var(--danger-text)}
+.strip .over:hover{background:color-mix(in oklch,var(--danger-subtle),var(--danger) 8%)}
+.strip .sub{font-size:12px;color:var(--muted-foreground);margin-top:2px}
+
+.grid-dash{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:24px;margin-top:24px;align-items:start}
+.group{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card);margin-bottom:16px}
+.group-h{display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;background:var(--muted);border-bottom:1px solid var(--border);font-size:13px;font-weight:600}
+.group-h .dot{width:7px;height:7px;border-radius:50%}
+.group-h .cnt{font-family:var(--font-mono);font-weight:400;font-size:12px;color:var(--muted-foreground)}
+.group-h .range{margin-left:auto;font-weight:400;font-size:12px;color:var(--muted-foreground)}
+.group.over{border-color:var(--danger-border)}
+.group.over .group-h{background:var(--danger-subtle);color:var(--danger-text);border-color:var(--danger-border)}
+.group.over .group-h .cnt,.group.over .group-h .range{color:var(--danger-text)}
+.item{display:grid;grid-template-columns:16px minmax(0,1fr) auto auto;align-items:center;gap:12px;min-height:52px;padding:8px 16px;border-top:1px solid var(--border-subtle);transition:background var(--dur-fast),opacity var(--dur) var(--ease-out)}
+.item:first-of-type{border-top:0}
+.item:hover{background:var(--row-hover)}
+.item .ttl{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.item .ttl a{color:inherit;text-decoration:none}.item .ttl a:hover{text-decoration:underline;text-underline-offset:3px}
+.item .ctx{font-size:12px;color:var(--muted-foreground);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .val{font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted-foreground);text-align:right}
+.item.done .ttl{color:var(--muted-foreground);text-decoration:line-through;text-decoration-color:var(--border-strong)}
+.item.leaving{opacity:0}
+.group-empty{display:flex;align-items:center;gap:8px;padding:14px 16px;font-size:13px;color:var(--muted-foreground)}
+.group-empty svg{color:var(--success)}
+.brand-list{padding:4px}
+.brand-row{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:9px 10px;border-radius:7px;text-decoration:none;color:inherit;transition:background var(--dur-fast)}
+.brand-row:hover{background:var(--muted)}
+.brand-row .nm{font-size:13px;font-weight:600;letter-spacing:.01em}
+.brand-row .nx{grid-column:1/-1;font-size:12px;color:var(--muted-foreground)}
+
+/* ===== Evento ===== */
+.ev-head{display:flex;align-items:flex-start;gap:16px}
+.ev-head .sp{flex:1}
+.meta{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:13px;color:var(--muted-foreground)}
+.meta span{display:inline-flex;align-items:center;gap:6px}
+.meta strong{color:var(--foreground);font-weight:500}
+.meter{margin-top:24px;padding:16px 18px;display:grid;grid-template-columns:repeat(4,auto) 1fr;gap:32px;align-items:start}
+.kpi .k{font-size:12px;color:var(--muted-foreground);display:flex;gap:6px;align-items:center}
+.kpi .v{font-size:20px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums;margin-top:4px;white-space:nowrap}
+.kpi .v small{font-size:13px;font-weight:500;color:var(--muted-foreground);letter-spacing:0;margin-right:2px}
+.kpi .d{font-size:12px;margin-top:2px}
+.bar-wrap{align-self:center;padding-left:8px}
+.bar{position:relative;height:8px;border-radius:999px;background:var(--muted);box-shadow:inset 0 0 0 1px var(--border);overflow:visible}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--primary);transition:width .5s var(--ease-out)}
+.bar .mark{position:absolute;top:-4px;bottom:-4px;width:1.5px;background:var(--foreground);opacity:.35;border-radius:1px}
+.bar-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted-foreground);margin-top:8px;font-variant-numeric:tabular-nums}
+.toolbar{display:flex;align-items:center;gap:12px;margin:20px 0 12px}
+.toolbar .sp{flex:1}
+.prog{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted-foreground)}
+.prog .bar{width:120px;height:6px}
+.prog .bar i{background:var(--success)}
+.sec{border:1px solid var(--border);border-radius:10px;background:var(--card);margin-bottom:12px;overflow:hidden}
+.sec-hd{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px 0 6px;background:var(--muted);border-bottom:1px solid var(--border)}
+.sec.closed .sec-hd{border-bottom:0}
+.sec-hd .nm{font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.sec-hd .pg{font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)}
+.sec-hd .mini{width:48px;height:4px;border-radius:9px;background:var(--border);overflow:hidden}
+.sec-hd .mini i{display:block;height:100%;background:var(--success)}
+.chev{transition:transform var(--dur) var(--ease-out)}
+.sec.closed .chev{transform:rotate(-90deg)}
+.sec.closed .sec-bd{display:none}
+.grip{color:var(--subtle-foreground);opacity:0;cursor:grab;width:20px;display:grid;place-items:center;transition:opacity var(--dur-fast)}
+.task:hover .grip,.sec-hd:hover .grip,.task:focus-within .grip{opacity:1}
+.task{display:grid;grid-template-columns:20px 16px minmax(0,1fr) auto auto;align-items:center;gap:10px;min-height:40px;padding:0 12px 0 6px;border-top:1px solid var(--border-subtle);transition:background var(--dur-fast)}
+.task:first-child{border-top:0}
+.task:hover{background:var(--row-hover)}
+.task .tt{font-size:13.5px}
+.task.done .tt{color:var(--muted-foreground);text-decoration:line-through;text-decoration-color:var(--border-strong)}
+.task .subc{font-family:var(--font-mono);font-size:11.5px;color:var(--muted-foreground);display:inline-flex;gap:4px;align-items:center}
+.task.sub{padding-left:42px;min-height:36px;position:relative}
+.task.sub::before{content:"";position:absolute;left:39px;top:0;bottom:0;width:1px;background:var(--border)}
+.task.sub .tt{font-size:13px}
+.task .del{opacity:0;transition:opacity var(--dur-fast)}
+.task:hover .del,.task:focus-within .del{opacity:1}
+.add-row{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px 0 32px;font-size:13px;color:var(--muted-foreground);border-top:1px solid var(--border-subtle);width:100%;text-align:left;transition:color var(--dur-fast),background var(--dur-fast)}
+.add-row:hover{color:var(--foreground);background:var(--row-hover)}
+.new-sec{display:flex;align-items:center;justify-content:center;gap:8px;height:44px;width:100%;border:1px dashed var(--border-strong);border-radius:10px;color:var(--muted-foreground);font-size:13px;font-weight:500;transition:all var(--dur-fast)}
+.new-sec:hover{color:var(--foreground);border-color:var(--control-border);background:var(--card)}
+
+/* ===== Marca ===== */
+.ev-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ev-card{padding:16px;display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;transition:border-color var(--dur-fast),box-shadow var(--dur-fast)}
+.ev-card:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+.ev-card .tp{display:flex;align-items:center;gap:8px}
+.ev-card .nm{font-size:15px;font-weight:600;letter-spacing:-.015em}
+.ev-card .fig{display:flex;justify-content:space-between;font-size:12px;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.ev-card .fig b{color:var(--foreground);font-weight:600;font-size:13px}
+.ev-card .bar{height:6px}
+.ev-card .ft{display:flex;gap:6px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--border-subtle)}
+
+/* ===== Login ===== */
+.login{min-height:760px;display:grid;place-items:center;background:var(--background);background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:20px 20px;border-radius:14px;box-shadow:var(--shadow-sm)}
+.login-card{width:380px;padding:32px;border-radius:14px}
+
+/* ===== Overlays ===== */
+.overlay{position:absolute;inset:0;background:var(--overlay);display:grid;place-items:center;border-radius:inherit;animation:fade .15s var(--ease-out)}
+.dialog{width:420px;background:var(--popover);border-radius:12px;box-shadow:var(--shadow-overlay);padding:20px;animation:rise .2s var(--ease-out)}
+.dialog h3{font-size:16px;font-weight:600;letter-spacing:-.015em}
+.dialog p{font-size:13.5px;color:var(--muted-foreground);margin-top:6px}
+.dialog .ft{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+@keyframes fade{from{opacity:0}}
+@keyframes rise{from{opacity:0;transform:translateY(6px) scale(.98)}}
+.toast{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 14px;background:var(--toast-bg);color:var(--toast-fg);border:1px solid var(--toast-border);border-radius:10px;box-shadow:var(--shadow-overlay);font-size:13px;width:max-content;min-width:300px}
+.toast svg{color:var(--toast-ok)}
+.toast .u{margin-left:auto;font-weight:500;color:var(--toast-action);padding:4px 6px;border-radius:5px}
+.toast .u:hover{background:color-mix(in oklch,currentColor 12%,transparent)}
+#toasts{position:fixed;right:20px;bottom:20px;z-index:99;display:flex;flex-direction:column;gap:8px}
+#toasts .toast{animation:rise .2s var(--ease-out)}
+.menu{width:200px;background:var(--popover);border-radius:9px;box-shadow:var(--shadow-overlay);padding:4px}
+.menu button{display:flex;width:100%;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:6px;font-size:13px}
+.menu button:hover{background:var(--accent)}
+.menu .sep{height:1px;background:var(--border);margin:4px}
+.menu .dn{color:var(--danger-text)}.menu .dn:hover{background:var(--danger-subtle)}
+
+/* ===== Estados ===== */
+.sk{background:linear-gradient(90deg,var(--border-subtle) 0%,var(--muted) 50%,var(--border-subtle) 100%);background-size:200% 100%;animation:sh 1.4s linear infinite;border-radius:5px}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:40px 24px;gap:6px}
+.empty .ic{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);display:grid;place-items:center;color:var(--muted-foreground);box-shadow:var(--shadow-xs);margin-bottom:8px}
+.empty h4{font-size:14px;font-weight:600}
+.empty p{font-size:13px;color:var(--muted-foreground);max-width:300px}
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:9px;border:1px solid var(--danger-border);background:var(--danger-subtle);color:var(--danger-text);font-size:13px}
+
+/* ===== Sistema ===== */
+.ds-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.ds-card{padding:20px}
+.ds-card h3{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;gap:8px;align-items:baseline}
+.ds-card h3 span{font-weight:400;color:var(--muted-foreground);font-size:12px}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px}
+.sw div{border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:11.5px}
+.sw i{display:block;height:44px}
+.sw p{padding:6px 8px;line-height:1.35}.sw p b{font-weight:500;display:block;font-size:12px}
+.sw p span{font-family:var(--font-mono);color:var(--muted-foreground);font-size:10.5px}
+.ts-row{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:baseline;padding:8px 0;border-top:1px solid var(--border-subtle)}
+.ts-row:first-of-type{border-top:0}
+.ts-row .mono{color:var(--muted-foreground);font-size:11px}
+.sp-row{display:flex;align-items:center;gap:12px;font-size:12px;padding:3px 0}
+.sp-row i{display:block;height:10px;background:var(--brand-subtle);border:1px solid var(--brand-border);border-radius:2px}
+.row-gap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.crit{columns:2;column-gap:32px;font-size:13.5px}
+.crit li{margin:0 0 10px 18px;break-inside:avoid}
+.crit b{font-weight:600}
+
+/* ===== Mobile ===== */
+.phones{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:375px;height:780px;border-radius:40px;border:10px solid oklch(0.14 0.006 265);background:var(--background);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-overlay);position:relative}
+.m-top{height:52px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--card);border-bottom:1px solid var(--border)}
+.m-body{flex:1;overflow:auto;padding:16px}
+.m-nav{height:64px;flex:none;display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border-top:1px solid var(--border);padding-bottom:8px}
+.m-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:500;color:var(--muted-foreground);text-decoration:none}
+.m-nav a.on{color:var(--foreground)}
+.m-nav a.on svg{color:var(--brand)}
+.phone .strip{grid-template-columns:repeat(2,1fr)}
+.phone .strip a:nth-child(3){border-left:0}
+.phone .strip a:nth-child(n+3){border-top:1px solid var(--border)}
+.phone .item{grid-template-columns:16px minmax(0,1fr) auto;padding:10px 14px}
+.m-row{padding:12px 14px;border-top:1px solid var(--border-subtle);display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px}
+.m-row:first-child{border-top:0}
+
+@media (max-width:1100px){.grid-dash{grid-template-columns:1fr}.ev-grid{grid-template-columns:1fr 1fr}.meter{grid-template-columns:repeat(2,auto)}.bar-wrap{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="tag" viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/></symbol>
+  <symbol id="cr" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="cd" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="cl" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="archive" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></symbol>
+  <symbol id="pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+  <symbol id="grip" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></symbol>
+  <symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01"/></symbol>
+  <symbol id="nf" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="rep" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></symbol>
+  <symbol id="ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="menu" viewBox="0 0 24 24"><path d="M4 12h16M4 6h16M4 18h16"/></symbol>
+  <symbol id="refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></symbol>
+  <symbol id="eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+  <symbol id="tasks" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/></symbol>
+  <symbol id="receipt" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 17.5v-11"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+</svg>
+
+<nav class="doc-nav" role="tablist" aria-label="Seções do redesign">
+  <b>Repaginação · Gerenciador de tarefas</b>
+  <button role="tab" data-p="sistema" aria-selected="true">0 · Sistema</button>
+  <button role="tab" data-p="painel">1 · Painel</button>
+  <button role="tab" data-p="evento">2 · Evento</button>
+  <button role="tab" data-p="marca">3 · Marca</button>
+  <button role="tab" data-p="marcas">4 · Marcas</button>
+  <button role="tab" data-p="login">5 · Login</button>
+  <button role="tab" data-p="mobile">Celular e estados</button>
+  <div class="theme-tg" role="group" aria-label="Tema"><button data-theme="light" aria-pressed="true" aria-label="Tema claro" title="Claro"><svg class="i s"><use href="#sun"/></svg></button><button data-theme="dark" aria-pressed="false" aria-label="Tema escuro" title="Escuro"><svg class="i s"><use href="#moon"/></svg></button></div>
+</nav>
+
+<!-- ============ 0 · SISTEMA ============ -->
+<section class="doc-page on" id="p-sistema"><div class="doc-wrap">
+  <div class="card ds-card" style="margin-bottom:16px">
+    <h3>Diagnóstico da versão atual <span>o que muda e por quê</span></h3>
+    <ul class="crit">
+      <li><b>Nada salta aos olhos.</b> “Atrasadas”, “Esta semana” e “Próxima semana” têm o mesmo peso. E com 08/11 já vencido, o painel diz “Nada atrasado”. A urgência precisa vir da data, e não da coluna onde o item caiu.</li>
+      <li><b>Azul em todo lugar.</b> Botão, ícone, aba, link e logo usam o mesmo azul-600 padrão. Como ele aparece em 10 lugares, nada se destaca. Na nova versão o azul fica só em foco, aba ativa e link.</li>
+      <li><b>Cards todos iguais.</b> Os 4 KPIs do evento e as 6 marcas no painel são caixas idênticas. Os KPIs viram um medidor único e as marcas viram uma lista com o próximo vencimento.</li>
+      <li><b>Números sem alinhamento.</b> “R$ 10.000,00” aparece em caixas de input centralizadas. Agora os valores ficam alinhados à direita, com dígitos tabulares, e o input só aparece no hover ou no foco.</li>
+      <li><b>Caixa-alta espaçada nos cabeçalhos de tabela e na sidebar.</b> Fica pesado e com cara de template. Troquei por texto em caixa normal, 12px e cor neutra.</li>
+      <li><b>Texto de enfeite.</b> “Ambiente seguro • Gestão de marcas premium” e o 🎉 saem. Os textos agora dizem o que fazer.</li>
+    </ul>
+  </div>
+
+  <div class="ds-grid">
+    <div class="card ds-card" style="grid-column:span 12">
+      <h3>Paleta <span>grafite levemente frio + 1 destaque (cobalto) + 3 cores de status. Todos os textos ≥ 4,5:1 nos dois temas. Hex = tema claro</span></h3>
+      <div class="sw">
+        <div><i style="background:var(--background)"></i><p><b>background</b><span>canvas · #F6F7F9</span></p></div>
+        <div><i style="background:var(--card)"></i><p><b>card</b><span>superfície</span></p></div>
+        <div><i style="background:var(--muted)"></i><p><b>muted</b><span>cabeçalhos/hover</span></p></div>
+        <div><i style="background:var(--border)"></i><p><b>border</b><span>#E3E5E9</span></p></div>
+        <div><i style="background:var(--muted-foreground)"></i><p><b>muted-fg</b><span>6,2:1 · #5C6169</span></p></div>
+        <div><i style="background:var(--foreground)"></i><p><b>foreground</b><span>17,8:1 · #14171D</span></p></div>
+        <div><i style="background:var(--primary)"></i><p><b>primary</b><span>botão principal</span></p></div>
+        <div><i style="background:var(--brand)"></i><p><b>brand</b><span>foco · aba · link · 5,6:1</span></p></div>
+        <div><i style="background:var(--danger)"></i><p><b>danger</b><span>atrasada · pendente NF</span></p></div>
+        <div><i style="background:var(--warning)"></i><p><b>warning</b><span>hoje · vence em breve</span></p></div>
+        <div><i style="background:var(--success)"></i><p><b>success</b><span>concluída · lançada</span></p></div>
+        <div><i style="background:var(--danger-subtle)"></i><p><b>*-subtle</b><span>fundos de status</span></p></div>
+      </div>
+      <p class="t-xs muted" style="margin-top:12px">Regra: o vermelho só aparece quando algo exige ação hoje (atrasado ou NF pendente). O verde aparece só depois que a ação foi feita. O âmbar marca “hoje” e “amanhã”. Fora isso, tudo é neutro.</p>
+    </div>
+
+    <div class="card ds-card" style="grid-column:span 7">
+      <h3>Tipografia <span>Geist (UI) + Geist Mono (contadores, datas curtas). Tracking negativo a partir de 16px</span></h3>
+      <div class="ts-row"><span class="mono">30 / 600 / −3,5%</span><span class="t-display">Evento 01</span></div>
+      <div class="ts-row"><span class="mono">24 / 600 / −3%</span><span class="t-title">Notas recorrentes</span></div>
+      <div class="ts-row"><span class="mono">20 / 600 tab.</span><span class="kpi"><span class="v" style="margin:0"><small>R$</small>10.000,00</span></span></div>
+      <div class="ts-row"><span class="mono">16 / 600 / −1,5%</span><span class="t-h2">Eventos e ações</span></div>
+      <div class="ts-row"><span class="mono">14 / 400–500</span><span>Fechar sonorização com o fornecedor</span></div>
+      <div class="ts-row"><span class="mono">13 / 400</span><span class="t-sm">Tabelas, listas densas, botões</span></div>
+      <div class="ts-row"><span class="mono">12 / 500</span><span class="t-xs muted">Metadados · PORSCHE · Ação de Churn</span></div>
+      <div class="ts-row"><span class="mono">12 mono</span><span class="mono">3/9 · 11/11</span></div>
+    </div>
+
+    <div class="card ds-card" style="grid-column:span 5">
+      <h3>Espaçamento, raio e sombra <span>grade de 4px</span></h3>
+      <div class="sp-row"><span class="mono" style="width:56px">4 · 1</span><i style="width:4px"></i><span class="muted">ícone ↔ texto</span></div>
+      <div class="sp-row"><span class="mono" style="width:56px">8 · 2</span><i style="width:8px"></i><span class="muted">dentro de controles</span></div>
+      <div class="sp-row"><span class="mono" style="width:56px">12 · 3</span><i style="width:12px"></i><span class="muted">gap de linha/célula</span></div>
+      <div class="sp-row"><span class="mono" style="width:56px">16 · 4</span><i style="width:16px"></i><span class="muted">padding de card</span></div>
+      <div class="sp-row"><span class="mono" style="width:56px">24 · 6</span><i style="width:24px"></i><span class="muted">entre blocos</span></div>
+      <div class="sp-row"><span class="mono" style="width:56px">32 · 8</span><i style="width:32px"></i><span class="muted">margem de página</span></div>
+      <div class="row-gap" style="margin-top:16px">
+        <div style="width:56px;height:40px;border:1px solid var(--border);border-radius:5px;display:grid;place-items:center" class="mono">5 tag</div>
+        <div style="width:56px;height:40px;border:1px solid var(--border);border-radius:7px;display:grid;place-items:center" class="mono">7 ctl</div>
+        <div style="width:56px;height:40px;border:1px solid var(--border);border-radius:10px;display:grid;place-items:center" class="mono">10 card</div>
+        <div style="width:56px;height:40px;border:1px solid var(--border);border-radius:12px;display:grid;place-items:center" class="mono">12 dlg</div>
+      </div>
+      <div class="row-gap" style="margin-top:16px">
+        <div style="flex:1;height:44px;border-radius:8px;background:var(--card);box-shadow:var(--shadow-xs);border:1px solid var(--border);display:grid;place-items:center" class="mono">xs · card</div>
+        <div style="flex:1;height:44px;border-radius:8px;background:var(--card);box-shadow:var(--shadow-sm);display:grid;place-items:center" class="mono">sm · hover</div>
+        <div style="flex:1;height:44px;border-radius:8px;background:var(--card);box-shadow:var(--shadow-overlay);display:grid;place-items:center" class="mono">overlay</div>
+      </div>
+      <p class="t-xs muted" style="margin-top:12px">Movimento: 120–180ms com <span class="mono">cubic-bezier(.22,1,.36,1)</span>. Sem fade-in em cascata e sem bounce. Tudo é desligado quando o sistema pede movimento reduzido.</p>
+    </div>
+
+    <div class="card ds-card" style="grid-column:span 6">
+      <h3>Botões <span>32px padrão · 28px em tabela · 38px no login</span></h3>
+      <div class="row-gap">
+        <button class="btn btn-primary"><svg class="i s"><use href="#plus"/></svg>Novo evento</button>
+        <button class="btn btn-outline"><svg class="i s"><use href="#pencil"/></svg>Editar</button>
+        <button class="btn btn-ghost">Cancelar</button>
+        <button class="btn btn-danger">Excluir</button>
+        <button class="btn btn-link">Ver tudo</button>
+        <button class="btn btn-outline btn-icon" aria-label="Mais ações"><svg class="i"><use href="#more"/></svg></button>
+        <button class="btn btn-primary" disabled>Desabilitado</button>
+        <button class="btn btn-outline btn-sm"><svg class="i xs"><use href="#plus"/></svg>Adicionar item</button>
+      </div>
+      <h3 style="margin-top:22px">Inputs</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="field"><label class="label" for="d1">Fornecedor</label><input id="d1" class="input" placeholder="Ex.: Audio Pro"></div>
+        <div class="field"><label class="label" for="d2">Valor orçado</label><input id="d2" class="input num" value="R$ 2.500,00" style="text-align:right"></div>
+        <div class="field"><label class="label" for="d3">Data do evento</label><input id="d3" class="input err" value="31/02/2026"><span class="err-msg"><svg class="i xs"><use href="#alert"/></svg>Data inválida</span></div>
+        <div class="field"><label class="label" for="d4">Marca</label><input id="d4" class="input" value="BMW" disabled><span class="hint">Definida pela página atual</span></div>
+      </div>
+    </div>
+
+    <div class="card ds-card" style="grid-column:span 6">
+      <h3>Status <span>badge = estado do item · data = urgência</span></h3>
+      <div class="row-gap">
+        <span class="badge b-danger"><span class="dot"></span>Lançamento pendente</span>
+        <span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Lançada</span>
+        <span class="badge b-warning"><span class="dot"></span>Vence hoje</span>
+        <span class="badge">Desativada</span>
+        <span class="badge b-brand">3/9 concluídas</span>
+      </div>
+      <div class="row-gap" style="margin-top:12px">
+        <span class="tag"><svg class="i xs"><use href="#tasks"/></svg>Tarefa</span>
+        <span class="tag"><svg class="i xs"><use href="#nf"/></svg>NF</span>
+        <span class="tag"><svg class="i xs"><use href="#rep"/></svg>Recorrente</span>
+      </div>
+      <div class="row-gap" style="margin-top:12px;gap:16px">
+        <span class="date over"><svg class="i xs"><use href="#alert"/></svg><b>há 7 dias</b> · 08/11</span>
+        <span class="date today"><svg class="i xs"><use href="#cal"/></svg><b>Hoje</b></span>
+        <span class="date"><svg class="i xs"><use href="#cal"/></svg>qua, 18/11</span>
+        <span class="date none"><svg class="i xs"><use href="#cal"/></svg>Sem prazo</span>
+      </div>
+      <h3 style="margin-top:22px">Abas, segmentado, checkbox, switch</h3>
+      <div class="tabs" role="tablist" style="margin-bottom:14px">
+        <button class="tab" role="tab" aria-selected="true"><svg class="i s"><use href="#receipt"/></svg>Orçamento e NFs<span class="c">3</span></button>
+        <button class="tab" role="tab" aria-selected="false"><svg class="i s"><use href="#tasks"/></svg>Demandas<span class="c red">5</span></button>
+      </div>
+      <div class="row-gap" style="gap:16px">
+        <div class="seg"><button aria-pressed="true">Ativos</button><button aria-pressed="false">Arquivados</button></div>
+        <button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>
+        <button class="cb on" role="checkbox" aria-checked="true" aria-label="Concluída"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>
+        <button class="switch on" role="switch" aria-checked="true" aria-label="Ocultar concluídas"></button>
+        <button class="switch" role="switch" aria-checked="false" aria-label="Exemplo"></button>
+      </div>
+    </div>
+
+    <div class="card ds-card" style="grid-column:span 7;position:relative;min-height:250px;overflow:hidden">
+      <h3>Diálogo de confirmação <span>ação destrutiva sempre nomeia o objeto</span></h3>
+      <div class="overlay" style="position:absolute;top:44px;border-radius:0 0 10px 10px">
+        <div class="dialog" role="alertdialog" aria-labelledby="dlg-t">
+          <h3 id="dlg-t">Excluir “Evento 01”?</h3>
+          <p>O orçamento (3 itens) e as 9 tarefas deste evento serão apagados. Se quiser só tirar da lista, use Arquivar.</p>
+          <div class="ft"><button class="btn btn-outline">Cancelar</button><button class="btn btn-outline"><svg class="i s"><use href="#archive"/></svg>Arquivar</button><button class="btn btn-danger">Excluir evento</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="card ds-card" style="grid-column:span 5">
+      <h3>Toast e menu <span>sonner, canto inferior direito</span></h3>
+      <div class="toast"><svg class="i"><use href="#ok"/></svg>Tarefa concluída<button class="u">Desfazer</button></div>
+      <div class="toast" style="margin-top:8px;background:var(--card);color:var(--foreground);border-color:var(--danger-border)"><svg class="i" style="color:var(--danger)"><use href="#alert"/></svg>Não foi possível salvar o valor<button class="u" style="color:var(--brand)">Tentar de novo</button></div>
+      <div class="menu" style="margin-top:14px">
+        <button><svg class="i s"><use href="#pencil"/></svg>Editar</button>
+        <button><svg class="i s"><use href="#archive"/></svg>Arquivar</button>
+        <div class="sep"></div>
+        <button class="dn"><svg class="i s"><use href="#trash"/></svg>Excluir…</button>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ SIDEBAR TEMPLATE (copiado por JS) ============ -->
+<template id="side-tpl">
+  <aside class="side" aria-label="Navegação principal">
+    <div class="logo"><div class="logo-mark">G</div><div><div class="logo-t">Gerenciador</div><div class="logo-s">Marketing · Brasília</div></div></div>
+    <a href="#" class="nav-a" data-k="painel"><svg class="i"><use href="#grid"/></svg>Painel<span class="cnt red">4</span></a>
+    <a href="#" class="nav-a" data-k="marcas"><svg class="i"><use href="#tag"/></svg>Marcas</a>
+    <div class="nav-label">Marcas</div>
+    <a href="#" class="nav-a" data-k="bmw"><span class="bd red"></span>BMW<span class="cnt red">3</span></a>
+    <a href="#" class="nav-a"><span class="bd"></span>MINI</a>
+    <a href="#" class="nav-a"><span class="bd"></span>BMW Motorrad</a>
+    <a href="#" class="nav-a"><span class="bd red"></span>Porsche<span class="cnt red">5</span></a>
+    <a href="#" class="nav-a"><span class="bd"></span>Zeekr / Partage</a>
+    <a href="#" class="nav-a"><span class="bd"></span>Eurobike</a>
+    <div class="side-theme" style="display:flex;align-items:center;justify-content:space-between;padding:8px;margin-top:auto"><span class="t-xs muted" style="font-weight:500">Tema</span><div class="theme-tg" role="group" aria-label="Tema"><button data-theme="light" aria-pressed="true" aria-label="Tema claro" title="Claro"><svg class="i s"><use href="#sun"/></svg></button><button data-theme="dark" aria-pressed="false" aria-label="Tema escuro" title="Escuro"><svg class="i s"><use href="#moon"/></svg></button></div></div><div class="side-foot" style="margin-top:0"><div class="avatar">K</div><span class="em">kelvyn@…</span><button class="btn btn-ghost btn-sm btn-icon" aria-label="Sair"><svg class="i s"><use href="#out"/></svg></button></div>
+  </aside>
+</template>
+
+<!-- ============ 1 · PAINEL ============ -->
+<section class="doc-page" id="p-painel"><div class="doc-wrap">
+  <p class="doc-h"><b>Painel</b> · a data define a urgência: atrasado é o 1º bloco, em vermelho. Clique nos checkboxes para ver a microinteração.</p>
+  <div class="app" data-side="painel">
+    <div class="sheet">
+      <div class="topbar"><div class="crumbs"><span class="cur">Painel</span></div><div class="sp"></div><span class="t-xs muted">Domingo, 15 de novembro</span></div>
+      <div class="content">
+        <h1 class="t-display">Boa noite, equipe</h1>
+        <p class="muted" style="margin-top:6px">4 itens atrasados e 4 vencendo esta semana.</p>
+
+        <div class="strip" style="margin-top:24px">
+          <a href="#g-over" class="over"><div class="l"><span class="dot" style="background:var(--danger)"></span>Atrasadas</div><div class="n">4</div><div class="sub" style="color:var(--danger-text)">mais antiga há 7 dias</div></a>
+          <a href="#g-week"><div class="l"><span class="dot" style="background:var(--warning)"></span>Esta semana</div><div class="n">4</div><div class="sub">3 vencem hoje</div></a>
+          <a href="#g-next"><div class="l"><span class="dot" style="background:var(--border-strong)"></span>Próxima semana</div><div class="n">2</div><div class="sub">23 – 29 nov</div></a>
+          <a href="#"><div class="l"><svg class="i xs"><use href="#nf"/></svg>NFs a lançar</div><div class="n">3</div><div class="sub num">R$ 7.700,00 previsto</div></a>
+        </div>
+
+        <div class="grid-dash">
+          <div>
+            <div class="group over" id="g-over">
+              <div class="group-h"><span class="dot" style="background:var(--danger)"></span>Atrasadas <span class="cnt">4</span><span class="range">antes de hoje</span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl"><a href="#">Falar com o Laércio para retirar os carros da garagem</a></div><div class="ctx">Porsche · Ação de Churn | Clube de Golfe</div></div><span class="tag"><svg class="i xs"><use href="#tasks"/></svg>Tarefa</span><span class="date over"><b>há 7 dias</b></span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl"><a href="#">Fechar buffet</a></div><div class="ctx">Porsche · Ação de Churn | Clube de Golfe</div></div><span class="tag"><svg class="i xs"><use href="#tasks"/></svg>Tarefa</span><span class="date over"><b>há 7 dias</b></span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl"><a href="#">Fechar sonorização</a></div><div class="ctx">Porsche · Ação de Churn | Clube de Golfe</div></div><span class="tag"><svg class="i xs"><use href="#tasks"/></svg>Tarefa</span><span class="date over"><b>há 7 dias</b></span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Marcar NF como lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl"><a href="#">Almoço de 05 casais + 02 staff</a><span class="badge b-danger" style="height:20px;font-size:11.5px"><span class="dot"></span>Lançamento pendente</span></div><div class="ctx">BMW · Passeio para a vinícola Brasília</div></div><span class="tag"><svg class="i xs"><use href="#nf"/></svg>NF</span><span class="date over"><b>há 4 dias</b></span></div>
+            </div>
+
+            <div class="group" id="g-week">
+              <div class="group-h"><span class="dot" style="background:var(--warning)"></span>Esta semana <span class="cnt">4</span><span class="range num">15 – 22 nov</span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Marcar como lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Gráfica LM</div><div class="ctx">Porsche · nota recorrente</div></div><span class="val">R$ 700,00</span><span class="date today"><b>Hoje</b></span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Marcar como lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Gráfica LM</div><div class="ctx">BMW · nota recorrente</div></div><span class="val">R$ 500,00</span><span class="date today"><b>Hoje</b></span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Marcar como lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Painel Alumi</div><div class="ctx">Porsche · nota recorrente</div></div><span class="val">R$ 1.200,00</span><span class="date today"><b>Hoje</b></span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl"><a href="#">Confirmar número final com o buffet</a></div><div class="ctx">BMW · Evento 01 · Pré-evento</div></div><span class="tag"><svg class="i xs"><use href="#tasks"/></svg>Tarefa</span><span class="date">qua, 18/11</span></div>
+            </div>
+
+            <div class="group" id="g-next">
+              <div class="group-h"><span class="dot" style="background:var(--border-strong)"></span>Próxima semana <span class="cnt">2</span><span class="range num">23 – 29 nov</span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl"><a href="#">Lançar NFs do evento</a></div><div class="ctx">BMW · Evento 01 · Pós-evento</div></div><span class="tag"><svg class="i xs"><use href="#tasks"/></svg>Tarefa</span><span class="date">qua, 25/11</span></div>
+              <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Marcar NF como lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Sonorização · Audio Pro</div><div class="ctx">BMW · Evento 01</div></div><span class="val">R$ 2.500,00</span><span class="date">dom, 22/11</span></div>
+            </div>
+          </div>
+
+          <aside class="card" aria-label="Marcas">
+            <div style="display:flex;align-items:center;padding:12px 14px 6px"><span class="t-h2" style="font-size:14px">Marcas</span><a href="#" class="btn btn-link t-xs" style="margin-left:auto;font-size:12.5px">Ver todas</a></div>
+            <div class="brand-list">
+              <a href="#" class="brand-row"><span class="nm">PORSCHE</span><span class="badge b-danger" style="height:20px">3 atrasadas</span><span class="nx">5 pendências · próx. hoje</span></a>
+              <a href="#" class="brand-row"><span class="nm">BMW</span><span class="badge b-danger" style="height:20px">1 atrasada</span><span class="nx">3 pendências · próx. hoje</span></a>
+              <a href="#" class="brand-row"><span class="nm">MINI</span><span class="badge b-success" style="height:20px"><svg class="i xs"><use href="#check"/></svg>Em dia</span><span class="nx">Nada pendente</span></a>
+              <a href="#" class="brand-row"><span class="nm">BMW MOTORRAD</span><span class="badge b-success" style="height:20px"><svg class="i xs"><use href="#check"/></svg>Em dia</span><span class="nx">Nada pendente</span></a>
+              <a href="#" class="brand-row"><span class="nm">ZEEKR / PARTAGE</span><span class="badge b-success" style="height:20px"><svg class="i xs"><use href="#check"/></svg>Em dia</span><span class="nx">Nada pendente</span></a>
+              <a href="#" class="brand-row"><span class="nm">EUROBIKE</span><span class="badge b-success" style="height:20px"><svg class="i xs"><use href="#check"/></svg>Em dia</span><span class="nx">Nada pendente</span></a>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 2 · EVENTO ============ -->
+<section class="doc-page" id="p-evento"><div class="doc-wrap">
+  <p class="doc-h"><b>Evento</b> · os 4 cards viram um medidor de orçamento (elemento-assinatura). Troque de aba, recolha seções e conclua tarefas.</p>
+  <div class="app" data-side="bmw">
+    <div class="sheet">
+      <div class="topbar">
+        <nav class="crumbs" aria-label="Trilha"><a href="#">Marcas</a><svg class="i xs"><use href="#cr"/></svg><a href="#">BMW</a><svg class="i xs"><use href="#cr"/></svg><span class="cur">Evento 01</span></nav>
+        <div class="sp"></div>
+        <button class="btn btn-outline btn-sm"><svg class="i xs"><use href="#pencil"/></svg>Editar</button>
+        <button class="btn btn-outline btn-sm"><svg class="i xs"><use href="#archive"/></svg>Arquivar</button>
+        <button class="btn btn-ghost btn-sm btn-icon" aria-label="Mais ações"><svg class="i s"><use href="#more"/></svg></button>
+      </div>
+      <div class="content">
+        <div class="eyebrow"><svg class="i xs"><use href="#folder"/></svg>Evento · BMW</div>
+        <h1 class="t-display" style="margin-top:6px">Evento 01</h1>
+        <div class="meta"><span><svg class="i s"><use href="#cal"/></svg><strong class="num">sex, 20/11/2026</strong> · em 5 dias</span><span><svg class="i s"><use href="#tasks"/></svg><strong class="num">3 de 9</strong> tarefas concluídas</span></div>
+
+        <div class="card meter">
+          <div class="kpi"><div class="k">Orçado</div><div class="v"><small>R$</small>10.000,00</div></div>
+          <div class="kpi"><div class="k">Real lançado</div><div class="v"><small>R$</small>4.500,00</div></div>
+          <div class="kpi"><div class="k">Saldo</div><div class="v" style="color:var(--success-text)"><small style="color:inherit">R$</small>5.500,00</div><div class="d" style="color:var(--success-text)">abaixo do orçado</div></div>
+          <div class="kpi"><div class="k">NFs em aberto</div><div class="v" style="color:var(--danger-text)">2</div><div class="d" style="color:var(--danger-text)">1 com prazo vencido</div></div>
+          <div class="bar-wrap"><div class="bar" role="meter" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" aria-label="Orçamento utilizado"><i style="width:45%"></i><span class="mark" style="left:100%"></span></div><div class="bar-lbl"><span>45% utilizado</span><span>limite</span></div></div>
+        </div>
+
+        <div class="tabs" role="tablist" style="margin-top:28px" id="ev-tabs">
+          <button class="tab" role="tab" aria-selected="true" data-t="orc"><svg class="i s"><use href="#receipt"/></svg>Orçamento e NFs<span class="c">3</span></button>
+          <button class="tab" role="tab" aria-selected="false" data-t="dem"><svg class="i s"><use href="#tasks"/></svg>Demandas<span class="c red">6</span></button>
+        </div>
+
+        <!-- Orçamento -->
+        <div id="t-orc" role="tabpanel">
+          <div class="toolbar"><span class="t-sm muted">Clique em qualquer valor para editar.</span><div class="sp"></div><button class="btn btn-outline btn-sm"><svg class="i xs"><use href="#plus"/></svg>Adicionar item</button></div>
+          <div class="card" style="overflow:hidden">
+          <table class="tbl">
+            <thead><tr><th style="width:18%">Serviço</th><th style="width:16%">Fornecedor</th><th class="r" style="width:13%">Orçado</th><th class="r" style="width:13%">Real</th><th>NF</th><th>Prazo p/ lançar</th><th>Obs. / link</th><th style="width:64px"></th></tr></thead>
+            <tbody>
+              <tr><td><input class="cell-in" value="Buffet" aria-label="Serviço" style="font-weight:500"></td><td><input class="cell-in" value="Sabor & Cia" aria-label="Fornecedor"></td><td><input class="cell-in money" value="6.000,00" aria-label="Orçado"></td><td><input class="cell-in money" value="3.000,00" aria-label="Real"></td><td><span class="badge b-danger"><span class="dot"></span>Pendente</span></td><td><span class="date over"><svg class="i xs"><use href="#alert"/></svg><b>11/11</b> · há 4 dias</span></td><td><input class="cell-in" placeholder="Adicionar…" aria-label="Observação"></td><td><span class="act" style="display:flex;gap:2px"><button class="btn btn-ghost btn-sm btn-icon" aria-label="Abrir link"><svg class="i s"><use href="#link"/></svg></button><button class="btn btn-ghost btn-sm btn-icon" aria-label="Excluir item"><svg class="i s"><use href="#trash"/></svg></button></span></td></tr>
+              <tr><td><input class="cell-in" value="Sonorização" aria-label="Serviço" style="font-weight:500"></td><td><input class="cell-in" value="Audio Pro" aria-label="Fornecedor"></td><td><input class="cell-in money" value="2.500,00" aria-label="Orçado"></td><td><input class="cell-in money" placeholder="—" aria-label="Real"></td><td><span class="badge b-danger"><span class="dot"></span>Pendente</span></td><td><span class="date">dom, 22/11</span></td><td><input class="cell-in" value="Contrato no Drive" aria-label="Observação"></td><td><span class="act" style="display:flex;gap:2px"><button class="btn btn-ghost btn-sm btn-icon" aria-label="Abrir link"><svg class="i s"><use href="#link"/></svg></button><button class="btn btn-ghost btn-sm btn-icon" aria-label="Excluir item"><svg class="i s"><use href="#trash"/></svg></button></span></td></tr>
+              <tr class="done"><td><input class="cell-in" value="Fotografia" aria-label="Serviço" style="font-weight:500"></td><td><input class="cell-in" value="Estúdio Luz" aria-label="Fornecedor"></td><td><input class="cell-in money" value="1.500,00" aria-label="Orçado"></td><td><input class="cell-in money" value="1.500,00" aria-label="Real"></td><td><span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Lançada</span></td><td><span class="date none">—</span></td><td><input class="cell-in" placeholder="Adicionar…" aria-label="Observação"></td><td><span class="act" style="display:flex;gap:2px"><button class="btn btn-ghost btn-sm btn-icon" aria-label="Abrir link"><svg class="i s"><use href="#link"/></svg></button><button class="btn btn-ghost btn-sm btn-icon" aria-label="Excluir item"><svg class="i s"><use href="#trash"/></svg></button></span></td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2">Total · 3 itens</td><td class="r num">10.000,00</td><td class="r num">4.500,00</td><td colspan="4"><span style="color:var(--success-text)" class="num">Saldo R$ 5.500,00</span></td></tr></tfoot>
+          </table>
+          </div>
+        </div>
+
+        <!-- Demandas -->
+        <div id="t-dem" role="tabpanel" hidden>
+          <div class="toolbar">
+            <div class="prog"><div class="bar"><i style="width:33%"></i></div><span class="num"><b style="color:var(--foreground);font-weight:500">3 de 9</b> concluídas</span></div>
+            <div class="sp"></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted-foreground)"><button class="switch" role="switch" aria-checked="false" id="hide-done"></button>Ocultar concluídas</label>
+          </div>
+
+          <div class="sec">
+            <div class="sec-hd"><span class="grip" aria-label="Arrastar seção"><svg class="i s"><use href="#grip"/></svg></span><button class="btn btn-ghost btn-sm btn-icon tog" aria-label="Recolher seção" aria-expanded="true"><svg class="i s chev"><use href="#cd"/></svg></button><span class="nm">Pré-evento</span><span class="mini"><i style="width:40%"></i></span><span class="pg">2/5</span><div style="flex:1"></div><button class="btn btn-ghost btn-sm btn-icon" aria-label="Mais"><svg class="i s"><use href="#more"/></svg></button></div>
+            <div class="sec-bd">
+              <div class="task done"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="cb on" role="checkbox" aria-checked="true" aria-label="Concluída"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Fechar lista de convidados</span><span class="date none">12/11</span><button class="btn btn-ghost btn-sm btn-icon del" aria-label="Excluir"><svg class="i s"><use href="#trash"/></svg></button></div>
+              <div class="task"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Confirmar número final com o buffet <span class="subc">· 1/2</span></span><span class="date">qua, 18/11</span><button class="btn btn-ghost btn-sm btn-icon del" aria-label="Excluir"><svg class="i s"><use href="#trash"/></svg></button></div>
+              <div class="task sub done"><span></span><button class="cb on" role="checkbox" aria-checked="true" aria-label="Concluída"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Degustação</span><span class="date none">10/11</span><button class="btn btn-ghost btn-sm btn-icon del" aria-label="Excluir"><svg class="i s"><use href="#trash"/></svg></button></div>
+              <div class="task sub"><span></span><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Enviar número de convidados</span><span class="date today"><b>Hoje</b></span><button class="btn btn-ghost btn-sm btn-icon del" aria-label="Excluir"><svg class="i s"><use href="#trash"/></svg></button></div>
+              <div class="task"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Briefing da sonorização</span><span class="date over"><b>há 2 dias</b></span><button class="btn btn-ghost btn-sm btn-icon del" aria-label="Excluir"><svg class="i s"><use href="#trash"/></svg></button></div>
+              <button class="add-row"><svg class="i s"><use href="#plus"/></svg>Adicionar tarefa</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-hd"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="btn btn-ghost btn-sm btn-icon tog" aria-label="Recolher seção" aria-expanded="true"><svg class="i s chev"><use href="#cd"/></svg></button><span class="nm">Dia do evento</span><span class="mini"><i style="width:0"></i></span><span class="pg">0/2</span><div style="flex:1"></div><button class="btn btn-ghost btn-sm btn-icon" aria-label="Mais"><svg class="i s"><use href="#more"/></svg></button></div>
+            <div class="sec-bd">
+              <div class="task"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Montagem e teste de som</span><span class="date">sex, 20/11</span><button class="btn btn-ghost btn-sm btn-icon del" aria-label="Excluir"><svg class="i s"><use href="#trash"/></svg></button></div>
+              <div class="task"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Check-in dos convidados</span><span class="date none"><svg class="i xs"><use href="#cal"/></svg>Sem prazo</span><button class="btn btn-ghost btn-sm btn-icon del" aria-label="Excluir"><svg class="i s"><use href="#trash"/></svg></button></div>
+              <button class="add-row"><svg class="i s"><use href="#plus"/></svg>Adicionar tarefa</button>
+            </div>
+          </div>
+
+          <div class="sec closed">
+            <div class="sec-hd"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="btn btn-ghost btn-sm btn-icon tog" aria-label="Expandir seção" aria-expanded="false"><svg class="i s chev"><use href="#cd"/></svg></button><span class="nm">Pós-evento</span><span class="mini"><i style="width:50%"></i></span><span class="pg">1/2</span><div style="flex:1"></div><button class="btn btn-ghost btn-sm btn-icon" aria-label="Mais"><svg class="i s"><use href="#more"/></svg></button></div>
+            <div class="sec-bd">
+              <div class="task done"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="cb on" role="checkbox" aria-checked="true" aria-label="Concluída"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Separar fotos para o Instagram</span><span class="date none">—</span><span></span></div>
+              <div class="task"><span class="grip"><svg class="i s"><use href="#grip"/></svg></span><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tt">Lançar NFs do evento</span><span class="date">qua, 25/11</span><span></span></div>
+            </div>
+          </div>
+          <button class="new-sec"><svg class="i s"><use href="#plus"/></svg>Nova seção</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 3 · MARCA ============ -->
+<section class="doc-page" id="p-marca"><div class="doc-wrap">
+  <p class="doc-h"><b>Marca</b> · a tabela de recorrentes fica alinhada para leitura de valores. Os cards de evento mostram progresso, e não só o total.</p>
+  <div class="app" data-side="bmw">
+    <div class="sheet">
+      <div class="topbar"><nav class="crumbs"><a href="#">Marcas</a><svg class="i xs"><use href="#cr"/></svg><span class="cur">BMW</span></nav><div class="sp"></div><button class="btn btn-primary btn-sm"><svg class="i xs"><use href="#plus"/></svg>Novo evento</button></div>
+      <div class="content">
+        <h1 class="t-display">BMW</h1>
+        <div class="meta"><span><strong class="num">3</strong> eventos ativos</span><span><strong class="num">4</strong> notas recorrentes</span><span style="color:var(--danger-text)"><svg class="i s"><use href="#alert"/></svg><strong style="color:inherit" class="num">3</strong> pendências · 1 atrasada</span></div>
+
+        <div class="sec-h" style="margin-top:32px"><h2 class="t-h2">Notas recorrentes</h2><div class="stepper"><button aria-label="Mês anterior"><svg class="i s"><use href="#cl"/></svg></button><span>Novembro 2026</span><button aria-label="Próximo mês"><svg class="i s"><use href="#cr"/></svg></button></div><div class="sp"></div><button class="btn btn-outline btn-sm"><svg class="i xs"><use href="#plus"/></svg>Nova nota recorrente</button></div>
+        <div class="card" style="overflow:hidden">
+        <table class="tbl">
+          <thead><tr><th style="width:40px"><span class="sr-only" hidden>Lançada</span></th><th>Despesa</th><th>Vencimento</th><th class="r">Previsto</th><th class="r" style="width:140px">Real</th><th>Observação</th><th>Status</th><th style="width:44px"></th></tr></thead>
+          <tbody>
+            <tr><td><button class="cb" role="checkbox" aria-checked="false" aria-label="Marcar Gráfica LM como lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button></td><td style="font-weight:500">Gráfica LM</td><td><span class="date today"><b>Hoje</b> · 15/11</span></td><td class="r">700,00</td><td><input class="cell-in money" value="500,00" aria-label="Valor real"></td><td><input class="cell-in" placeholder="Adicionar…" aria-label="Observação"></td><td><span class="badge b-warning"><span class="dot"></span>Pendente</span></td><td><button class="btn btn-ghost btn-sm btn-icon act" aria-label="Mais"><svg class="i s"><use href="#more"/></svg></button></td></tr>
+            <tr><td><button class="cb" role="checkbox" aria-checked="false" aria-label="Marcar como lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button></td><td style="font-weight:500">Painel Alumi</td><td><span class="date">sex, 20/11</span></td><td class="r">1.200,00</td><td><input class="cell-in money" placeholder="—" aria-label="Valor real"></td><td><input class="cell-in" placeholder="Adicionar…" aria-label="Observação"></td><td><span class="badge"><span class="dot"></span>A vencer</span></td><td><button class="btn btn-ghost btn-sm btn-icon act" aria-label="Mais"><svg class="i s"><use href="#more"/></svg></button></td></tr>
+            <tr class="done"><td><button class="cb on" role="checkbox" aria-checked="true" aria-label="Lançada"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button></td><td style="font-weight:500">Assinatura de banco de imagens</td><td><span class="date none">05/11</span></td><td class="r">180,00</td><td><input class="cell-in money" value="180,00" aria-label="Valor real"></td><td><input class="cell-in" value="Plano anual" aria-label="Observação"></td><td><span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Lançada</span></td><td><button class="btn btn-ghost btn-sm btn-icon act" aria-label="Mais"><svg class="i s"><use href="#more"/></svg></button></td></tr>
+            <tr class="done" style="opacity:.6"><td><button class="cb" role="checkbox" aria-checked="false" aria-label="Nota desativada" disabled style="opacity:.4"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button></td><td style="font-weight:500">Brindes institucionais</td><td><span class="date none">—</span></td><td class="r">400,00</td><td></td><td></td><td><span class="badge">Desativada</span></td><td><button class="btn btn-ghost btn-sm btn-icon act" aria-label="Mais"><svg class="i s"><use href="#more"/></svg></button></td></tr>
+          </tbody>
+          <tfoot><tr><td></td><td colspan="2">3 ativas · 1 lançada</td><td class="r num">2.080,00</td><td class="r num">680,00</td><td colspan="3"></td></tr></tfoot>
+        </table>
+        </div>
+
+        <div class="sec-h" style="margin-top:40px"><h2 class="t-h2">Eventos e ações</h2><div class="seg" role="group"><button aria-pressed="true">Ativos <span class="mono muted">3</span></button><button aria-pressed="false">Arquivados <span class="mono muted">7</span></button></div></div>
+        <div class="ev-grid">
+          <a href="#" class="card ev-card">
+            <div class="tp"><span class="eyebrow"><svg class="i xs"><use href="#cal"/></svg><span class="num">20/11</span> · em 5 dias</span></div>
+            <div class="nm">Evento 01</div>
+            <div><div class="fig"><span>Real <b>R$ 4.500</b></span><span>de R$ 10.000</span></div><div class="bar" style="margin-top:6px"><i style="width:45%"></i></div></div>
+            <div class="ft"><span class="badge b-danger"><span class="dot"></span>2 NFs pendentes</span><span class="badge">6 tarefas</span></div>
+          </a>
+          <a href="#" class="card ev-card" style="border-color:var(--danger-border)">
+            <div class="tp"><span class="eyebrow" style="color:var(--danger-text)"><svg class="i xs"><use href="#alert"/></svg><span class="num">11/11</span> · realizado</span></div>
+            <div class="nm">Passeio para a vinícola Brasília</div>
+            <div><div class="fig"><span>Real <b>R$ 3.850</b></span><span>de R$ 4.000</span></div><div class="bar" style="margin-top:6px"><i style="width:96%"></i></div></div>
+            <div class="ft"><span class="badge b-danger"><span class="dot"></span>1 NF atrasada</span><span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Tarefas ok</span></div>
+          </a>
+          <a href="#" class="card ev-card">
+            <div class="tp"><span class="eyebrow"><svg class="i xs"><use href="#cal"/></svg><span class="num">05/12</span> · em 20 dias</span></div>
+            <div class="nm">Test drive X3</div>
+            <div><div class="fig"><span>Real <b>R$ 0</b></span><span>de R$ 6.500</span></div><div class="bar" style="margin-top:6px"><i style="width:0"></i></div></div>
+            <div class="ft"><span class="badge">Sem NFs</span><span class="badge">4 tarefas</span></div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 4 · MARCAS ============ -->
+<section class="doc-page" id="p-marcas"><div class="doc-wrap">
+  <p class="doc-h"><b>Marcas</b> · troca a grade de cards por uma tabela ordenada por urgência.</p>
+  <div class="app" data-side="marcas">
+    <div class="sheet">
+      <div class="topbar"><div class="crumbs"><span class="cur">Marcas</span></div></div>
+      <div class="content">
+        <h1 class="t-display">Marcas</h1>
+        <p class="muted" style="margin-top:6px">6 marcas · 2 com pendências</p>
+        <div class="card" style="overflow:hidden;margin-top:24px">
+        <table class="tbl">
+          <thead><tr><th>Marca</th><th class="r">Eventos ativos</th><th class="r">Recorrentes do mês</th><th>Situação</th><th>Próximo vencimento</th><th style="width:44px"></th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:600;letter-spacing:.01em">PORSCHE</td><td class="r">2</td><td class="r">3</td><td><span class="badge b-danger"><span class="dot"></span>3 atrasadas · 5 pendências</span></td><td><span class="date today"><b>Hoje</b> · Gráfica LM</span></td><td><svg class="i s muted"><use href="#cr"/></svg></td></tr>
+            <tr><td style="font-weight:600;letter-spacing:.01em">BMW</td><td class="r">3</td><td class="r">4</td><td><span class="badge b-danger"><span class="dot"></span>1 atrasada · 3 pendências</span></td><td><span class="date today"><b>Hoje</b> · Gráfica LM</span></td><td><svg class="i s muted"><use href="#cr"/></svg></td></tr>
+            <tr><td style="font-weight:600;letter-spacing:.01em">MINI</td><td class="r">1</td><td class="r">2</td><td><span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Em dia</span></td><td><span class="date">qui, 03/12</span></td><td><svg class="i s muted"><use href="#cr"/></svg></td></tr>
+            <tr><td style="font-weight:600;letter-spacing:.01em">BMW MOTORRAD</td><td class="r">1</td><td class="r">1</td><td><span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Em dia</span></td><td><span class="date">seg, 07/12</span></td><td><svg class="i s muted"><use href="#cr"/></svg></td></tr>
+            <tr><td style="font-weight:600;letter-spacing:.01em">ZEEKR / PARTAGE</td><td class="r">0</td><td class="r">1</td><td><span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Em dia</span></td><td><span class="date none">—</span></td><td><svg class="i s muted"><use href="#cr"/></svg></td></tr>
+            <tr><td style="font-weight:600;letter-spacing:.01em">EUROBIKE</td><td class="r">0</td><td class="r">0</td><td><span class="badge b-success"><svg class="i xs"><use href="#check"/></svg>Em dia</span></td><td><span class="date none">—</span></td><td><svg class="i s muted"><use href="#cr"/></svg></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 5 · LOGIN ============ -->
+<section class="doc-page" id="p-login"><div class="doc-wrap">
+  <p class="doc-h"><b>Login</b> · sai a borda azul no topo e o texto de enfeite. O erro aparece no próprio formulário, sem toast.</p>
+  <div class="login">
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;justify-content:center">
+      <form class="card login-card" onsubmit="return false">
+        <div class="logo-mark" style="width:36px;height:36px;font-size:17px;border-radius:9px">G</div>
+        <h1 class="t-title" style="margin-top:20px">Entrar</h1>
+        <p class="muted t-sm" style="margin-top:4px">Gerenciador de tarefas do marketing</p>
+        <div class="field" style="margin-top:24px"><label class="label" for="em">E-mail</label><input class="input" id="em" type="email" autocomplete="email" placeholder="nome@empresa.com.br" style="height:38px"></div>
+        <div class="field" style="margin-top:14px"><label class="label" for="pw">Senha</label><div style="position:relative"><input class="input" id="pw" type="password" autocomplete="current-password" value="12345678" style="height:38px;padding-right:38px"><button class="btn btn-ghost btn-sm btn-icon" type="button" aria-label="Mostrar senha" style="position:absolute;right:5px;top:5px"><svg class="i s"><use href="#eye"/></svg></button></div></div>
+        <button class="btn btn-primary btn-lg" style="width:100%;margin-top:22px">Entrar<span class="kbd">↵</span></button>
+        <p class="t-xs muted" style="margin-top:18px;text-align:center">Acesso restrito à equipe. Esqueceu a senha? Fale com o administrador.</p>
+      </form>
+      <form class="card login-card" onsubmit="return false">
+        <div class="logo-mark" style="width:36px;height:36px;font-size:17px;border-radius:9px">G</div>
+        <h1 class="t-title" style="margin-top:20px">Entrar</h1>
+        <p class="muted t-sm" style="margin-top:4px">Estado de erro</p>
+        <div class="alert" role="alert" style="margin-top:20px"><svg class="i s" style="margin-top:1px"><use href="#alert"/></svg><span>E-mail ou senha incorretos. Confira e tente de novo.</span></div>
+        <div class="field" style="margin-top:16px"><label class="label" for="em2">E-mail</label><input class="input" id="em2" value="kelvyn@empresa.com.br" style="height:38px"></div>
+        <div class="field" style="margin-top:14px"><label class="label" for="pw2">Senha</label><input class="input err" id="pw2" type="password" value="123" style="height:38px" aria-invalid="true"></div>
+        <button class="btn btn-primary btn-lg" style="width:100%;margin-top:22px" disabled>Entrando…</button>
+      </form>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ CELULAR E ESTADOS ============ -->
+<section class="doc-page" id="p-mobile"><div class="doc-wrap">
+  <p class="doc-h"><b>Celular</b> · no celular o tema fica no topo do Painel e em Conta. · a sidebar vira uma barra inferior com 3 destinos. “Marcas” abre a lista das marcas. As tabelas viram linhas empilhadas.</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="m-top"><div class="logo-mark">G</div><span style="font-weight:600;font-size:15px;letter-spacing:-.015em">Painel</span><span style="margin-left:auto"><div class="theme-tg" role="group" aria-label="Tema"><button data-theme="light" aria-pressed="true" aria-label="Tema claro" title="Claro"><svg class="i s"><use href="#sun"/></svg></button><button data-theme="dark" aria-pressed="false" aria-label="Tema escuro" title="Escuro"><svg class="i s"><use href="#moon"/></svg></button></div></span></div>
+      <div class="m-body">
+        <div class="strip">
+          <a class="over"><div class="l"><span class="dot" style="background:var(--danger)"></span>Atrasadas</div><div class="n">4</div></a>
+          <a><div class="l"><span class="dot" style="background:var(--warning)"></span>Esta semana</div><div class="n">4</div></a>
+          <a><div class="l"><span class="dot" style="background:var(--border-strong)"></span>Próxima</div><div class="n">2</div></a>
+          <a><div class="l">NFs a lançar</div><div class="n">3</div></a>
+        </div>
+        <div class="group over" style="margin-top:16px">
+          <div class="group-h"><span class="dot" style="background:var(--danger)"></span>Atrasadas <span class="cnt">4</span></div>
+          <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Falar com o Laércio sobre os carros</div><div class="ctx">Porsche · Clube de Golfe</div></div><span class="date over"><b>7d</b></span></div>
+          <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Fechar buffet</div><div class="ctx">Porsche · Clube de Golfe</div></div><span class="date over"><b>7d</b></span></div>
+          <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Almoço de 05 casais + 02 staff</div><div class="ctx">BMW · NF pendente</div></div><span class="date over"><b>4d</b></span></div>
+        </div>
+        <div class="group">
+          <div class="group-h"><span class="dot" style="background:var(--warning)"></span>Esta semana <span class="cnt">4</span></div>
+          <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Gráfica LM</div><div class="ctx">Porsche · R$ 700,00</div></div><span class="date today"><b>Hoje</b></span></div>
+          <div class="item"><button class="cb" role="checkbox" aria-checked="false" aria-label="Concluir"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button><div style="min-width:0"><div class="ttl">Gráfica LM</div><div class="ctx">BMW · R$ 500,00</div></div><span class="date today"><b>Hoje</b></span></div>
+        </div>
+      </div>
+      <nav class="m-nav" aria-label="Navegação"><a href="#" class="on"><svg class="i"><use href="#grid"/></svg>Painel</a><a href="#"><svg class="i"><use href="#tag"/></svg>Marcas</a><a href="#"><svg class="i"><use href="#user"/></svg>Conta</a></nav>
+    </div>
+
+    <div class="phone">
+      <div class="m-top"><button class="btn btn-ghost btn-sm btn-icon" aria-label="Voltar"><svg class="i"><use href="#cl"/></svg></button><span style="font-weight:600;font-size:15px;letter-spacing:-.015em">Evento 01</span><button class="btn btn-ghost btn-sm btn-icon" aria-label="Mais" style="margin-left:auto"><svg class="i"><use href="#more"/></svg></button></div>
+      <div class="m-body">
+        <div class="eyebrow">BMW · sex, 20/11 · em 5 dias</div>
+        <div class="card" style="padding:14px;margin-top:12px">
+          <div class="fig" style="display:flex;justify-content:space-between;font-size:12px" ><span class="muted">Real lançado</span><span class="muted">Orçado</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:600;font-size:17px;letter-spacing:-.02em" class="num"><span>R$ 4.500,00</span><span class="muted" style="font-weight:500">10.000,00</span></div>
+          <div class="bar" style="margin-top:10px"><i style="width:45%"></i></div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px"><span style="color:var(--success-text)">Saldo R$ 5.500,00</span><span style="color:var(--danger-text)">2 NFs em aberto</span></div>
+        </div>
+        <div class="tabs" style="margin-top:16px"><button class="tab" aria-selected="true">Orçamento<span class="c">3</span></button><button class="tab" aria-selected="false">Demandas<span class="c red">6</span></button></div>
+        <div class="card" style="margin-top:12px">
+          <div class="m-row"><b style="font-weight:500">Buffet</b><span class="num" style="text-align:right">3.000,00</span><span class="t-xs muted">Sabor & Cia · orç. 6.000,00</span><span class="badge b-danger" style="height:20px;justify-self:end"><span class="dot"></span>Pendente</span></div>
+          <div class="m-row"><b style="font-weight:500">Sonorização</b><span class="num muted" style="text-align:right">—</span><span class="t-xs muted">Audio Pro · orç. 2.500,00</span><span class="badge b-danger" style="height:20px;justify-self:end"><span class="dot"></span>Pendente</span></div>
+          <div class="m-row"><b style="font-weight:500">Fotografia</b><span class="num" style="text-align:right">1.500,00</span><span class="t-xs muted">Estúdio Luz · orç. 1.500,00</span><span class="badge b-success" style="height:20px;justify-self:end">Lançada</span></div>
+        </div>
+        <button class="btn btn-outline" style="width:100%;margin-top:12px"><svg class="i s"><use href="#plus"/></svg>Adicionar item</button>
+      </div>
+      <nav class="m-nav"><a href="#"><svg class="i"><use href="#grid"/></svg>Painel</a><a href="#" class="on"><svg class="i"><use href="#tag"/></svg>Marcas</a><a href="#"><svg class="i"><use href="#user"/></svg>Conta</a></nav>
+    </div>
+
+    <div style="flex:1;min-width:340px;display:flex;flex-direction:column;gap:16px">
+      <div class="card"><div class="empty"><div class="ic"><svg class="i"><use href="#folder"/></svg></div><h4>Nenhum evento ativo</h4><p>Crie um evento para controlar orçamento, NFs e demandas da BMW.</p><button class="btn btn-primary btn-sm" style="margin-top:10px"><svg class="i xs"><use href="#plus"/></svg>Novo evento</button></div></div>
+      <div class="card"><div class="empty" style="padding:28px"><div class="ic" style="color:var(--success)"><svg class="i"><use href="#ok"/></svg></div><h4>Tudo em dia</h4><p>Nenhuma tarefa ou NF vencida. Próximo vencimento: sex, 20/11.</p></div></div>
+      <div class="card" style="padding:16px" aria-busy="true" aria-label="Carregando">
+        <p class="t-xs muted" style="margin-bottom:12px">Carregando (skeleton com o formato real da lista)</p>
+        <div style="display:grid;grid-template-columns:16px 1fr 60px;gap:12px;align-items:center;margin-bottom:14px"><div class="sk" style="height:16px"></div><div><div class="sk" style="height:12px;width:70%"></div><div class="sk" style="height:10px;width:40%;margin-top:6px"></div></div><div class="sk" style="height:12px"></div></div>
+        <div style="display:grid;grid-template-columns:16px 1fr 60px;gap:12px;align-items:center;margin-bottom:14px"><div class="sk" style="height:16px"></div><div><div class="sk" style="height:12px;width:55%"></div><div class="sk" style="height:10px;width:35%;margin-top:6px"></div></div><div class="sk" style="height:12px"></div></div>
+        <div style="display:grid;grid-template-columns:16px 1fr 60px;gap:12px;align-items:center"><div class="sk" style="height:16px"></div><div><div class="sk" style="height:12px;width:62%"></div><div class="sk" style="height:10px;width:30%;margin-top:6px"></div></div><div class="sk" style="height:12px"></div></div>
+      </div>
+      <div class="card"><div class="empty" style="padding:28px"><div class="ic" style="color:var(--danger)"><svg class="i"><use href="#alert"/></svg></div><h4>Não foi possível carregar o painel</h4><p>Verifique sua conexão. Nenhum dado foi perdido.</p><button class="btn btn-outline btn-sm" style="margin-top:10px"><svg class="i xs"><use href="#refresh"/></svg>Tentar de novo</button></div></div>
+    </div>
+  </div>
+</div></section>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+// sidebars
+document.querySelectorAll('.app[data-side]').forEach(app=>{
+  const s=document.getElementById('side-tpl').content.cloneNode(true);
+  const k=app.dataset.side;
+  s.querySelectorAll('.nav-a').forEach(a=>{ if(a.dataset.k===k) a.classList.add('on'); });
+  app.prepend(s);
+});
+
+// tema: claro/escuro (em memória; no app real use next-themes)
+function setTheme(t){
+  document.documentElement.classList.toggle('dark',t==='dark');
+  document.querySelectorAll('.theme-tg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.theme===t));
+}
+document.addEventListener('click',e=>{const b=e.target.closest('.theme-tg button');if(b)setTheme(b.dataset.theme)});
+if(matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
+// doc nav
+document.querySelectorAll('.doc-nav button[data-p]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.doc-nav button[data-p]').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('.doc-page').forEach(p=>p.classList.toggle('on',p.id==='p-'+b.dataset.p));
+  scrollTo(0,0);
+});
+// event tabs
+document.querySelectorAll('#ev-tabs .tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('#ev-tabs .tab').forEach(x=>x.setAttribute('aria-selected',x===t));
+  document.getElementById('t-orc').hidden=t.dataset.t!=='orc';
+  document.getElementById('t-dem').hidden=t.dataset.t!=='dem';
+});
+// collapse
+document.querySelectorAll('.tog').forEach(b=>b.onclick=()=>{
+  const s=b.closest('.sec');s.classList.toggle('closed');
+  const open=!s.classList.contains('closed');b.setAttribute('aria-expanded',open);b.setAttribute('aria-label',open?'Recolher seção':'Expandir seção');
+});
+// hide done
+const hd=document.getElementById('hide-done');
+hd.onclick=()=>{const on=hd.classList.toggle('on');hd.setAttribute('aria-checked',on);document.querySelectorAll('#t-dem .task.done').forEach(t=>t.style.display=on?'none':'');};
+document.querySelectorAll('.switch:not(#hide-done)').forEach(s=>s.onclick=()=>{const on=s.classList.toggle('on');s.setAttribute('aria-checked',on)});
+document.querySelectorAll('.seg').forEach(g=>g.querySelectorAll('button').forEach(b=>b.onclick=()=>g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))));
+// toast
+function toast(msg,undo){
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML='<svg class="i"><use href="#ok"/></svg>'+msg+'<button class="u">Desfazer</button>';
+  t.querySelector('.u').onclick=()=>{undo();t.remove()};
+  document.getElementById('toasts').append(t);setTimeout(()=>t.remove(),4000);
+}
+// checkboxes
+document.querySelectorAll('.cb').forEach(cb=>cb.addEventListener('click',()=>{
+  if(cb.disabled) return;
+  const on=!cb.classList.contains('on');
+  cb.classList.toggle('on',on);cb.setAttribute('aria-checked',on);
+  cb.classList.remove('pop');void cb.offsetWidth;if(on)cb.classList.add('pop');
+  const row=cb.closest('.item,.task,tr');
+  if(row) row.classList.toggle('done',on);
+  if(on && row && row.classList.contains('item') && row.closest('#p-painel')){
+    const restore=()=>{row.style.display='';row.classList.remove('leaving','done');cb.classList.remove('on');cb.setAttribute('aria-checked',false)};
+    setTimeout(()=>row.classList.add('leaving'),700);
+    setTimeout(()=>{if(row.classList.contains('leaving'))row.style.display='none'},900);
+    toast(cb.getAttribute('aria-label').includes('lançada')?'NF marcada como lançada':'Tarefa concluída',restore);
+  } else if(on) toast('Concluída',()=>{cb.classList.remove('on');cb.setAttribute('aria-checked',false);row&&row.classList.remove('done')});
+}));
+</script>
+</body>
+</html>

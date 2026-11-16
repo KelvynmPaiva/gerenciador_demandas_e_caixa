@@ -22,16 +22,19 @@ describe("eventos", () => {
     expect(resumos.get("e1")).toEqual({
       totalReal: 0.3, // sem sobra de centavos (0,1 + 0,2)
       nfsPendentes: 2,
+      nfsVencidas: 0,
       tarefasPendentes: 1,
     });
     expect(resumos.get("e2")).toEqual({
       totalReal: 1500,
       nfsPendentes: 0,
+      nfsVencidas: 0,
       tarefasPendentes: 0,
     });
     expect(resumos.get("e3")).toEqual({
       totalReal: 0,
       nfsPendentes: 0,
+      nfsVencidas: 0,
       tarefasPendentes: 2,
     });
     expect(resumos.has("fora")).toBe(false);

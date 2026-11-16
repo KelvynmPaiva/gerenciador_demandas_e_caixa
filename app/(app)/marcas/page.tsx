@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Tag } from "lucide-react";
+import { DateChip } from "@/components/date-chip";
+import { EmptyState } from "@/components/empty-state";
 import { Pagina } from "@/components/pagina";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
 import { fimDaProximaSemana, hojeSaoPaulo } from "@/lib/datas";
 import { plural } from "@/lib/formato";
 import { listarMarcasAtivas } from "@/lib/marcas";
 import { createClient } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
 import { MenuMarca } from "./menu-marca";
 import { NovaMarca } from "./nova-marca";
+
+// Colunas da lista (desktop). No celular cada marca vira um bloco empilhado.
+const COLUNAS = "md:grid-cols-[minmax(0,1fr)_110px_140px_150px_40px]";
 
 // Conta quantas linhas existem para cada marca → { id da marca: quantidade }
 function contarPorMarca(linhas: { marca_id: string | null }[] | null) {
@@ -23,14 +27,15 @@ function contarPorMarca(linhas: { marca_id: string | null }[] | null) {
 
 export default async function MarcasPage() {
   const supabase = await createClient();
-  const limiteDoPainel = fimDaProximaSemana(hojeSaoPaulo());
+  const hoje = hojeSaoPaulo();
+  const limiteDoPainel = fimDaProximaSemana(hoje);
 
   const [marcas, eventos, pendencias] = await Promise.all([
     listarMarcasAtivas(), // já buscada pelo layout nesta requisição (cache)
     supabase.from("eventos").select("marca_id").eq("arquivado", false),
     // Pendências = o mesmo que aparece no Painel: itens atrasados ou
     // com data até o domingo da próxima semana.
-    supabase.from("vw_pendencias").select("marca_id").lte("data", limiteDoPainel),
+    supabase.from("vw_pendencias").select("marca_id, data").lte("data", limiteDoPainel),
   ]);
 
   const erro = marcas.error ?? eventos.error ?? pendencias.error;
@@ -39,100 +44,104 @@ export default async function MarcasPage() {
   const listaDeMarcas = marcas.data ?? [];
   const eventosPorMarca = contarPorMarca(eventos.data);
   const pendenciasPorMarca = contarPorMarca(pendencias.data);
+  // Próximo prazo de cada marca (o mais antigo ainda pendente)
+  const proximoPrazo = new Map<string, string>();
+  for (const linha of pendencias.data ?? []) {
+    if (!linha.marca_id || !linha.data) continue;
+    const atual = proximoPrazo.get(linha.marca_id);
+    if (!atual || linha.data < atual) proximoPrazo.set(linha.marca_id, linha.data);
+  }
 
   return (
     <Pagina breadcrumb={[{ rotulo: "Marcas" }]}>
-      <div className="mb-6 flex items-end justify-between gap-4 border-b pb-5">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[30px] font-semibold leading-[38px] tracking-[-0.02em]">
-            Marcas
-          </h1>
-          <p className="mt-1 text-muted-foreground">
+          <h1 className="text-display">Marcas</h1>
+          <p className="mt-1.5 text-muted-foreground">
             Gestão das marcas e visão geral das demandas.
           </p>
         </div>
         <NovaMarca />
       </div>
 
-      {listaDeMarcas.length === 0 && (
-        <p className="mb-4 text-muted-foreground">
-          Nenhuma marca ativa. Crie a primeira no cartão abaixo.
-        </p>
-      )}
+      {listaDeMarcas.length === 0 ? (
+        <div className="rounded-lg border border-dashed bg-card">
+          <EmptyState
+            icon={Tag}
+            title="Nenhuma marca ativa"
+            text="Use “Nova marca” para criar a primeira."
+          />
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
+          <div
+            className={`hidden h-[34px] items-center gap-4 bg-muted px-4 text-xs font-medium text-muted-foreground md:grid ${COLUNAS}`}
+          >
+            <span>Marca</span>
+            <span className="text-right">Eventos ativos</span>
+            <span>Pendências</span>
+            <span>Próximo prazo</span>
+            <span className="sr-only">Ações</span>
+          </div>
+          <ul>
+            {listaDeMarcas.map((marca, indice) => {
+              const qtdEventos = eventosPorMarca.get(marca.id) ?? 0;
+              const qtdPendencias = pendenciasPorMarca.get(marca.id) ?? 0;
+              const proximo = proximoPrazo.get(marca.id) ?? null;
 
-      <div className="grid grid-cols-3 gap-5">
-        {listaDeMarcas.map((marca, indice) => {
-          const qtdEventos = eventosPorMarca.get(marca.id) ?? 0;
-          const qtdPendencias = pendenciasPorMarca.get(marca.id) ?? 0;
-
-          return (
-            <article
-              key={marca.id}
-              className="flex flex-col rounded-xl border bg-card shadow-xs"
-            >
-              <div className="flex items-start gap-3 p-5">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-muted text-xs font-bold">
-                  {marca.nome.trim().slice(0, 3).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/marcas/${marca.id}`}
-                    className="block truncate text-lg font-semibold tracking-[-0.015em] hover:text-primary"
-                  >
-                    {marca.nome}
-                  </Link>
-                  <div className="mt-1.5">
-                    {qtdPendencias > 0 ? (
-                      <Badge variant="perigo">
-                        {plural(qtdPendencias, "pendência", "pendências")}
-                      </Badge>
-                    ) : (
-                      <Badge variant="sucesso">Em dia</Badge>
-                    )}
-                  </div>
-                </div>
-                <MenuMarca
-                  id={marca.id}
-                  nome={marca.nome}
-                  podeSubir={indice > 0}
-                  podeDescer={indice < listaDeMarcas.length - 1}
-                />
-              </div>
-
-              <div className="mx-5 mb-5 grid grid-cols-2 gap-4 rounded-lg border bg-muted/50 px-4 py-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Eventos ativos</p>
-                  <p className="text-2xl font-semibold tabular-nums">
-                    {qtdEventos}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Pendências</p>
-                  <p
-                    className={cn(
-                      "text-2xl font-semibold tabular-nums",
-                      qtdPendencias > 0 ? "text-perigo" : "text-sucesso",
-                    )}
-                  >
-                    {qtdPendencias}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-auto border-t px-5 py-3">
-                <Link
-                  href={`/marcas/${marca.id}`}
-                  className="flex items-center justify-end gap-1.5 text-sm font-medium text-primary hover:underline"
+              return (
+                <li
+                  key={marca.id}
+                  className={`relative grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border-t border-border-subtle px-4 py-3 transition-colors first:border-t-0 hover:bg-row-hover md:py-0 ${COLUNAS}`}
                 >
-                  Acessar marca <ArrowRight className="size-4" />
-                </Link>
-              </div>
-            </article>
-          );
-        })}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="grid size-9 shrink-0 place-items-center rounded-md border bg-muted text-[11px] font-bold">
+                      {marca.nome.trim().slice(0, 3).toUpperCase()}
+                    </div>
+                    {/* O link cobre a linha toda; o menu "…" fica por cima (z-10) */}
+                    <Link
+                      href={`/marcas/${marca.id}`}
+                      className="truncate text-[13.5px] font-semibold after:absolute after:inset-0 hover:underline hover:underline-offset-3"
+                    >
+                      {marca.nome}
+                    </Link>
+                  </div>
 
-        <NovaMarca variante="cartao" />
-      </div>
+                  <div className="relative z-10 row-start-1 justify-self-end md:order-last md:row-auto">
+                    <MenuMarca
+                      id={marca.id}
+                      nome={marca.nome}
+                      podeSubir={indice > 0}
+                      podeDescer={indice < listaDeMarcas.length - 1}
+                    />
+                  </div>
+
+                  <span className="num text-[13px] text-muted-foreground md:text-right md:text-foreground">
+                    <span className="md:hidden">Eventos ativos: </span>
+                    {qtdEventos}
+                  </span>
+                  <span>
+                    {qtdPendencias > 0 ? (
+                      <StatusBadge tone="danger">
+                        {plural(qtdPendencias, "pendência", "pendências")}
+                      </StatusBadge>
+                    ) : (
+                      <StatusBadge tone="success">Em dia</StatusBadge>
+                    )}
+                  </span>
+                  <span>
+                    {proximo ? (
+                      <DateChip data={proximo} hoje={hoje} />
+                    ) : (
+                      <span className="text-[12.5px] text-subtle-foreground">Nada pendente</span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </Pagina>
   );
 }

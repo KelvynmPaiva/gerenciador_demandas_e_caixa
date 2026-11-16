@@ -50,7 +50,7 @@ export function BotaoLink({
           size="icon-sm"
           aria-label={rotulo}
           title={valor ? "Link salvo. Clique para ver ou editar" : "Adicionar link"}
-          className={cn(valor ? "text-primary" : "text-muted-foreground/60")}
+          className={cn(valor ? "text-brand" : "text-muted-foreground/60")}
         >
           <Link2 />
         </Button>

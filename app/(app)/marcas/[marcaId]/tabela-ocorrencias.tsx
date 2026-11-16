@@ -1,12 +1,13 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { EllipsisVertical, Pencil, Trash2 } from "lucide-react";
+import { EllipsisVertical, Pencil, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CampoTexto, CampoValor } from "@/components/campos-inline";
 import { DialogoConfirmar } from "@/components/dialogo-confirmar";
 import { SeletorData } from "@/components/seletor-data";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -80,9 +81,9 @@ export function TabelaOcorrencias({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
-      <Table>
-        <TableHeader>
+    <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
+      <Table className="max-md:block">
+        <TableHeader className="max-md:hidden">
           <TableRow>
             <TableHead className="w-10">
               <span className="sr-only">Feita</span>
@@ -97,15 +98,15 @@ export function TabelaOcorrencias({
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody className="max-md:block">
           {linhas.length === 0 && (
             <TableRow className="hover:bg-transparent">
-              <TableCell
-                colSpan={7}
-                className="h-28 text-center text-muted-foreground"
-              >
-                Nenhuma despesa neste mês. Use &ldquo;Adicionar despesa&rdquo;
-                para cadastrar.
+              <TableCell colSpan={7} className="h-auto p-0 whitespace-normal">
+                <EmptyState
+                  icon={Repeat}
+                  title="Nenhuma despesa neste mês"
+                  text="Use “Adicionar despesa” para cadastrar."
+                />
               </TableCell>
             </TableRow>
           )}
@@ -120,14 +121,14 @@ export function TabelaOcorrencias({
         </TableBody>
       </Table>
 
-      <div className="flex items-center justify-between border-t bg-[#f9fafb] px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex items-center justify-between border-t bg-muted px-4 py-3 text-[13px] text-muted-foreground">
         <span>
           {plural(linhas.length, "despesa recorrente", "despesas recorrentes")}{" "}
           neste mês
         </span>
         <span>
           Total real lançado:{" "}
-          <strong className="font-semibold tabular-nums text-primary">
+          <strong className="num text-[15px] font-semibold text-foreground">
             {formatarMoeda(somarValores(linhas.map((l) => l.valorReal)))}
           </strong>
         </span>
@@ -180,8 +181,8 @@ function LinhaDaTabela({
   }
 
   return (
-    <TableRow>
-      <TableCell>
+    <TableRow className="relative max-md:grid max-md:grid-cols-2 max-md:items-center max-md:gap-x-3 max-md:gap-y-1.5 max-md:px-4 max-md:py-3">
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:absolute max-md:top-3.5 max-md:left-4">
         <Checkbox
           checked={linha.checkMarcado}
           onCheckedChange={(marcado) =>
@@ -192,16 +193,17 @@ function LinhaDaTabela({
       </TableCell>
 
       {/* Nome longo quebra em duas linhas (como no protótipo) em vez de ser cortado */}
-      <TableCell className="max-w-[260px] min-w-[180px] whitespace-normal">
+      <TableCell className="max-w-[260px] min-w-[180px] whitespace-normal max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2 max-md:pr-10 max-md:pl-8">
         <span className="block py-1 leading-5 font-medium">{nome}</span>
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         <SeletorData
           estilo="linha"
           rotulo={`Data de ${nome}`}
           valor={linha.vencimento}
           destaque={atrasada}
+          concluido={status === "concluida"}
           permitirLimpar={false}
           onChange={(vencimento) =>
             vencimento && aoSalvar(linha.id, { vencimento })
@@ -209,7 +211,7 @@ function LinhaDaTabela({
         />
       </TableCell>
 
-      <TableCell className="text-right">
+      <TableCell className="text-right max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
         <div className="flex justify-end">
           <CampoValor
             rotulo={`Valor real de ${nome}`}
@@ -220,7 +222,7 @@ function LinhaDaTabela({
         </div>
       </TableCell>
 
-      <TableCell className="min-w-[160px]">
+      <TableCell className="min-w-[160px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2">
         <CampoTexto
           rotulo={`Observação de ${nome}`}
           placeholder="Adicionar observação"
@@ -229,15 +231,15 @@ function LinhaDaTabela({
         />
       </TableCell>
 
-      <TableCell>
-        {status === "concluida" && <Badge variant="sucesso">Concluída</Badge>}
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
+        {status === "concluida" && <StatusBadge tone="success">Concluída</StatusBadge>}
         {status === "falta_valor_real" && (
-          <Badge variant="atencao">Falta valor real</Badge>
+          <StatusBadge tone="warning">Falta valor real</StatusBadge>
         )}
-        {status === "pendente" && <Badge variant="neutro">Pendente</Badge>}
+        {status === "pendente" && <StatusBadge tone="neutral">Pendente</StatusBadge>}
       </TableCell>
 
-      <TableCell>
+      <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:absolute max-md:top-2 max-md:right-2">
         {/* modal={false}: evita que o menu trave a tela ao abrir uma janela a partir dele */}
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>

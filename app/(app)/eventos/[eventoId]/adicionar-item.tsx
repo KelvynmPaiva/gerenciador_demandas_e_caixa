@@ -37,7 +37,7 @@ export function AdicionarItem({ eventoId }: { eventoId: string }) {
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        className="flex items-center gap-2 text-sm font-medium text-brand hover:underline"
       >
         <CirclePlus className="size-4" /> Adicionar item
       </button>

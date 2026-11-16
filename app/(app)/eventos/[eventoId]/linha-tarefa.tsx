@@ -60,7 +60,7 @@ export function LinhaTarefa({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "flex items-center gap-2 border-t bg-card py-2 pr-3 pl-2 first:border-t-0",
+        "group flex items-center gap-2 border-t border-border-subtle bg-card py-2 pr-3 pl-2 transition-colors first:border-t-0 hover:bg-row-hover",
         isDragging && "opacity-40",
       )}
     >
@@ -71,7 +71,7 @@ export function LinhaTarefa({
         {...listeners}
         aria-label={`Arrastar a tarefa ${tarefa.descricao}`}
         title="Arrastar para reordenar ou mover de seção"
-        className="cursor-grab touch-none rounded p-1 text-muted-foreground/50 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+        className="cursor-grab touch-none rounded p-1 text-muted-foreground opacity-0 outline-none transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/30 active:cursor-grabbing"
       >
         <GripVertical className="size-4" />
       </button>
@@ -89,7 +89,7 @@ export function LinhaTarefa({
         onClick={() => aoAbrir(tarefa.id)}
         title="Abrir detalhes"
         className={cn(
-          "min-w-0 flex-1 truncate rounded px-1 py-1 text-left text-sm outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring",
+          "min-w-0 flex-1 truncate rounded px-1 py-1 text-left text-[13.5px] outline-none hover:text-brand focus-visible:ring-[3px] focus-visible:ring-ring/30",
           tarefa.concluida && "text-muted-foreground line-through",
         )}
       >
@@ -98,21 +98,21 @@ export function LinhaTarefa({
 
       <div className="flex shrink-0 items-center gap-2">
         {todasFeitas && !tarefa.concluida && (
-          <Badge variant="sucesso" className="gap-1">
+          <Badge variant="success" className="gap-1">
             <CircleCheck /> Todas as subtarefas concluídas
           </Badge>
         )}
         {total > 0 && !todasFeitas && (
           <Badge
-            variant="neutro"
-            className="gap-1 tabular-nums"
+            variant="neutral"
+            className="num gap-1"
             title={`${feitas} de ${total} subtarefas concluídas`}
           >
             <ListChecks /> {feitas}/{total}
           </Badge>
         )}
         {tarefa.linkExterno && (
-          <Link2 className="size-4 text-primary" aria-label="Tem link externo" />
+          <Link2 className="size-4 text-brand" aria-label="Tem link externo" />
         )}
         <SeletorData
           estilo="linha"
@@ -120,6 +120,7 @@ export function LinhaTarefa({
           placeholder="Sem prazo"
           valor={tarefa.prazo}
           destaque={prazoVencido}
+          concluido={tarefa.concluida}
           onChange={(prazo) => acoes.salvarTarefa(tarefa.id, { prazo })}
         />
         <Button
@@ -127,7 +128,7 @@ export function LinhaTarefa({
           size="icon-sm"
           aria-label={`Excluir a tarefa ${tarefa.descricao}`}
           title="Excluir tarefa"
-          className="hover:bg-perigo-fundo hover:text-perigo"
+          className="hover:bg-danger-subtle hover:text-danger-text"
           onClick={() => setExcluindo(true)}
         >
           <Trash2 />
@@ -155,7 +156,7 @@ export function LinhaTarefa({
 // Cópia simplificada da linha que acompanha o mouse durante o arrastar
 export function TarefaFlutuante({ tarefa }: { tarefa: Tarefa }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border bg-card py-2 pr-4 pl-2 text-sm shadow-lg">
+    <div className="flex items-center gap-2 rounded-lg border bg-card py-2 pr-4 pl-2 text-sm shadow-overlay">
       <GripVertical className="size-4 text-muted-foreground" />
       <span
         className={cn(

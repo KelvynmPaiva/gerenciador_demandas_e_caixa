@@ -1,11 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, CircleCheck, Folder } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, CalendarDays, ListChecks } from "lucide-react";
+import { Money } from "@/components/money";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
+import { hojeSaoPaulo } from "@/lib/datas";
 import type { ResumoDoEvento } from "@/lib/eventos";
-import { formatarIntervalo, formatarMoeda, plural } from "@/lib/formato";
+import { formatarIntervalo, plural } from "@/lib/formato";
+import { contagemDeDias } from "@/lib/prazo";
+import { cn } from "@/lib/utils";
 
-// Cartão ("pasta") de um evento ou ação na tela da marca.
+// Cartão de um evento ou ação na tela da marca. Com NF vencida, a borda avisa.
 export function CartaoEvento({
   evento,
   resumo,
@@ -20,47 +24,60 @@ export function CartaoEvento({
   resumo: ResumoDoEvento;
 }) {
   const link = `/eventos/${evento.id}`;
+  const hoje = hojeSaoPaulo();
+  // "em 5 dias" até o começo; depois disso só o intervalo de datas
+  const contagem =
+    evento.data_inicio && evento.data_inicio >= hoje
+      ? contagemDeDias(evento.data_inicio, hoje)
+      : null;
 
   return (
-    <article className="flex flex-col rounded-xl border bg-card shadow-xs">
-      <div className="flex items-center justify-between gap-3 px-5 pt-5">
-        <span className="flex items-center gap-2 text-xs font-semibold tracking-[0.05em] text-muted-foreground uppercase">
-          <Folder className="size-4 text-primary" />
+    <article
+      className={cn(
+        "flex flex-col rounded-lg border bg-card shadow-xs transition-colors hover:border-border-strong",
+        resumo.nfsVencidas > 0 && "border-danger-border hover:border-danger-border",
+      )}
+    >
+      <div className="flex items-center justify-between gap-3 px-4 pt-4">
+        <span className="text-xs font-medium text-muted-foreground">
           {evento.tipo === "acao" ? "Ação" : "Evento"}
         </span>
-        <Badge variant={resumo.nfsPendentes > 0 ? "perigo" : "sucesso"}>
-          {plural(resumo.nfsPendentes, "NF pendente", "NFs pendentes")}
-        </Badge>
+        {resumo.nfsPendentes > 0 ? (
+          <StatusBadge tone="danger">
+            {plural(resumo.nfsPendentes, "NF pendente", "NFs pendentes")}
+          </StatusBadge>
+        ) : (
+          <StatusBadge tone="success">NFs em dia</StatusBadge>
+        )}
       </div>
 
-      <div className="px-5 pt-3">
-        <Link
-          href={link}
-          className="block text-lg font-semibold tracking-[-0.015em] hover:text-primary"
-        >
+      <div className="px-4 pt-2">
+        <Link href={link} className="text-h2 block hover:text-brand">
           {evento.nome}
         </Link>
-        <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-          <CalendarDays className="size-4 shrink-0" />
+        <p className="num mt-1 flex flex-wrap items-center gap-x-1.5 text-[13px] text-muted-foreground">
+          <CalendarDays className="size-3.5 shrink-0" aria-hidden />
           {formatarIntervalo(evento.data_inicio, evento.data_fim)}
+          {contagem && <span>· {contagem}</span>}
         </p>
+        {resumo.nfsVencidas > 0 && (
+          <p className="mt-1 text-xs font-medium text-danger-text">
+            {plural(resumo.nfsVencidas, "NF com prazo vencido", "NFs com prazo vencido")}
+          </p>
+        )}
       </div>
 
-      <div className="mx-5 mt-4 rounded-lg border bg-muted/50 px-4 py-3">
-        <p className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
-          Total real
-        </p>
-        <p className="text-2xl font-semibold tabular-nums">
-          {formatarMoeda(resumo.totalReal)}
-        </p>
+      <div className="mx-4 mt-4 border-t border-border-subtle pt-3">
+        <p className="text-xs text-muted-foreground">Total real</p>
+        <Money value={resumo.totalReal} className="text-kpi" />
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-3 border-t px-5 py-3">
-        <span className="flex items-center gap-2 text-sm text-muted-foreground">
-          <CircleCheck className="size-4" />
+      <div className="mt-4 flex items-center justify-between gap-3 border-t px-4 py-2.5">
+        <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+          <ListChecks className="size-3.5" aria-hidden />
           {plural(resumo.tarefasPendentes, "tarefa pendente", "tarefas pendentes")}
         </span>
-        <Button asChild variant="outline" size="sm" className="text-primary">
+        <Button asChild variant="ghost" size="sm" className="text-brand hover:text-brand">
           <Link href={link}>
             Detalhes <ArrowRight />
           </Link>

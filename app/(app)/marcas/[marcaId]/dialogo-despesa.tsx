@@ -144,8 +144,8 @@ function FormularioDespesa({
     cn(
       "inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
       ativa
-        ? "border-primary bg-accent font-medium text-primary"
-        : "border-input bg-card text-foreground hover:border-[#d1d5db] hover:bg-muted/40",
+        ? "border-primary bg-accent font-medium text-brand"
+        : "border-input bg-card text-foreground hover:border-control-border hover:bg-muted/40",
     );
 
   return (

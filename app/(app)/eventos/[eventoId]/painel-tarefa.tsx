@@ -196,7 +196,7 @@ function ConteudoDoPainel({
                   href={linkParaAbrir}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="truncate text-sm text-primary hover:underline"
+                  className="truncate text-sm text-brand hover:underline"
                 >
                   {linkParaAbrir}
                 </a>
@@ -225,7 +225,7 @@ function ConteudoDoPainel({
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold">Subtarefas</h3>
             {total > 0 && (
-              <Badge variant="neutro" className="tabular-nums">
+              <Badge variant="neutral" className="tabular-nums">
                 {feitas}/{total} concluídas
               </Badge>
             )}
@@ -233,7 +233,7 @@ function ConteudoDoPainel({
               <button
                 type="button"
                 onClick={() => setOcultarConcluidas((atual) => !atual)}
-                className="text-xs font-medium text-primary hover:underline"
+                className="text-xs font-medium text-brand hover:underline"
               >
                 {ocultarConcluidas ? "Mostrar concluídas" : "Ocultar concluídas"}
               </button>
@@ -255,14 +255,14 @@ function ConteudoDoPainel({
               aria-valuemax={100}
             >
               <div
-                className="h-full rounded-full bg-sucesso transition-all"
+                className="h-full rounded-full bg-success transition-all"
                 style={{ width: `${percentual}%` }}
               />
             </div>
           )}
 
           {todasFeitas && (
-            <div className="mt-4 flex items-center gap-2 rounded-lg border border-sucesso-borda bg-sucesso-fundo px-4 py-3 text-sm font-medium text-sucesso">
+            <div className="mt-4 flex items-center gap-2 rounded-lg border border-success-border bg-success-subtle px-4 py-3 text-sm font-medium text-success-text">
               <CircleCheck className="size-4" /> Todas as subtarefas concluídas
             </div>
           )}
@@ -316,7 +316,7 @@ function ConteudoDoPainel({
 
       <SheetFooter className="flex-row items-center justify-between border-t px-6 py-4">
         <span className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="size-2 rounded-full bg-sucesso" />
+          <span className="size-2 rounded-full bg-success" />
           Alterações salvas automaticamente
         </span>
         <SheetClose asChild>
@@ -415,20 +415,21 @@ function LinhaSubtarefa({
           size="icon-sm"
           aria-label={`Excluir a subtarefa ${subtarefa.descricao}`}
           title="Excluir subtarefa"
-          className="hover:bg-perigo-fundo hover:text-perigo"
+          className="hover:bg-danger-subtle hover:text-danger-text"
           onClick={() => acoes.excluirSubtarefa(tarefaId, subtarefa.id)}
         >
           <Trash2 />
         </Button>
       </div>
 
-      <div className="mt-1 flex items-center gap-2 pl-14">
+      <div className="relative mt-1 flex items-center gap-2 pl-[42px] before:absolute before:top-0 before:bottom-0 before:left-[19px] before:w-px before:bg-border">
         <SeletorData
           estilo="linha"
           rotulo={`Prazo da subtarefa ${subtarefa.descricao}`}
           placeholder="Sem prazo"
           valor={subtarefa.prazo}
           destaque={prazoVencido}
+          concluido={subtarefa.concluida}
           onChange={(prazo) => acoes.salvarSubtarefa(tarefaId, subtarefa.id, { prazo })}
         />
         <div className="min-w-0 flex-1">

@@ -3,6 +3,16 @@
 Registro de funcionalidades e mudanças relevantes, da mais recente para a mais antiga.
 Formato: data · o que foi feito · arquivos alterados. Atualizar a cada entrega (regra no `CLAUDE.md`).
 
+## 2026-11-16
+- **Repaginação visual** (guia em `docs/redesign/`; só aparência, rotas/props/actions/dnd-kit iguais). Branch `feat/redesign`, um commit por passo.
+  - Tema: fontes Geist, tokens novos em `app/globals.css` (brand cobalto, danger/warning/success, sombras) e **tema claro/escuro** com `next-themes` (`ThemeProvider`, `ThemeToggle` na lateral e na aba Conta do celular). Toaster acompanha o tema.
+  - shadcn: botão grafite (no escuro inverte), input/select/textarea, tabela sem caixa-alta, abas `line`, checkbox verde, switch, diálogos/menus com `shadow-overlay`, `Badge` com tons `danger/warning/success/brand/neutral`, `AlertDialog` novo (`DialogoConfirmar` passou a usá-lo) e `Skeleton` com shimmer.
+  - Novos: `DateChip`, `StatusBadge`, `Money`, `EmptyState`, `ResumoEvento`, `NavegacaoMobile`; `lib/prazo.ts` (urgência e rótulo relativo em datas texto/São Paulo, com teste) e `diasAte` em `lib/datas.ts`; `ResumoDoEvento` ganhou `nfsVencidas`.
+  - Telas: Painel (coluna única Atrasadas → Esta semana → Próxima semana, faixa de resumo, lista de marcas à direita, conclusão com risco 700ms + saída 200ms + "Desfazer" que reverte no banco), Evento (cabeçalho com contagem e progresso, ações Editar/Arquivar no topo e Excluir no menu "…", `ResumoEvento`, células sem borda, progresso por seção, alça de arrastar só no hover), Marca, Marcas (lista com pendências e próximo prazo, mantém a ordem manual) e Login (pontilhado, erro acima dos campos).
+  - Mobile (< 768px): lateral some, barra inferior Painel/Marcas/Conta, topo com voltar + título, tabelas empilhadas (mesmos campos editáveis, sem Sheet) e alvos de toque de 40px.
+  - Nomes antigos `perigo/sucesso/atencao/neutro`, hex fixos e `text-primary` (link) trocados pelos tokens novos.
+  - Arquivos: `app/globals.css`, `app/layout.tsx`, `app/login/*`, `app/(app)/{layout,page,blocos-painel}.tsx`, `app/(app)/marcas/**`, `app/(app)/eventos/**`, `components/**`, `components/ui/**`, `lib/{prazo,datas,eventos}.ts`, `lib/__tests__/{prazo,eventos}.test.ts`, `package.json`
+
 ## 2026-11-15
 - **Despesas: excluir só um mês e nome sem repetição.** Menu da linha ganhou "Excluir só este mês" (`excluirOcorrencia`: apaga a despesa daquele mês e mantém a nota, que volta como sugestão); o antigo "Excluir despesa" virou "Excluir de todos os meses". Renomear (`editarNota`) recusa nome já usado por outra despesa da marca ("Já existe uma despesa com esse nome."); `notaComMesmoNome` ganhou `ignorarId`. Falha ao desfazer a nota nova em `criarOcorrencia` agora vai para o `console.error`.
   - Arquivos: `app/(app)/marcas/[marcaId]/{actions.ts,tabela-ocorrencias.tsx}`, `lib/despesas.ts`, `lib/__tests__/despesas.test.ts`, `CLAUDE.md`
