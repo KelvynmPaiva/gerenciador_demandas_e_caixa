@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FolderOpen } from "lucide-react";
 import { BotaoNovoEvento } from "@/app/(app)/eventos/dialogo-evento";
+import { EmptyState } from "@/components/empty-state";
 import { Pagina } from "@/components/pagina";
 import { Badge } from "@/components/ui/badge";
 import { fimDaProximaSemana, hojeSaoPaulo, lerMes } from "@/lib/datas";
@@ -88,6 +90,7 @@ export default async function MarcaPage({
   const resumos = await resumirEventos(
     supabase,
     eventos.data.map((evento) => evento.id),
+    hoje,
   );
 
   // Ordem: data e, no empate, nome (o nome está na nota, por isso a ordem é feita aqui)
@@ -125,7 +128,7 @@ export default async function MarcaPage({
 
   const estiloOpcao = (ativa: boolean) =>
     cn(
-      "rounded-md px-3 py-1 text-sm transition-colors",
+      "rounded-md px-3 py-1 text-[13px] transition-colors",
       ativa
         ? "bg-card font-medium text-foreground shadow-xs"
         : "text-muted-foreground hover:text-foreground",
@@ -135,11 +138,9 @@ export default async function MarcaPage({
     <Pagina
       breadcrumb={[{ rotulo: "Marcas", href: "/marcas" }, { rotulo: marca.nome }]}
     >
-      <div className="mb-8 border-b pb-5">
+      <div className="mb-8">
         <div className="flex items-center gap-3">
-          <h1 className="text-[30px] font-semibold leading-[38px] tracking-[-0.02em]">
-            {marca.nome}
-          </h1>
+          <h1 className="text-display">{marca.nome}</h1>
           {!marca.ativa && <Badge variant="neutral">Desativada</Badge>}
         </div>
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-muted-foreground">
@@ -162,9 +163,9 @@ export default async function MarcaPage({
       </div>
 
       <section>
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-5">
-            <h2 className="text-2xl font-semibold leading-8 tracking-[-0.02em]">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <h2 className="text-h2">
               Notas recorrentes do mês
             </h2>
             <SeletorMes
@@ -187,9 +188,9 @@ export default async function MarcaPage({
       </section>
 
       <section id="eventos" className="mt-12 scroll-mt-20">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-5">
-            <h2 className="text-2xl font-semibold leading-8 tracking-[-0.02em]">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <h2 className="text-h2">
               Eventos e ações
             </h2>
             <div
@@ -217,13 +218,15 @@ export default async function MarcaPage({
         </div>
 
         {eventos.data.length === 0 ? (
-          <div className="rounded-xl border border-dashed bg-card p-10 text-center text-muted-foreground">
-            {verArquivados
-              ? "Nenhum evento arquivado."
-              : "Nenhum evento ativo. Use “Novo evento” para criar o primeiro."}
+          <div className="rounded-lg border border-dashed bg-card">
+            <EmptyState
+              icon={FolderOpen}
+              title={verArquivados ? "Nenhum evento arquivado" : "Nenhum evento ativo"}
+              text={verArquivados ? undefined : "Use “Novo evento” para criar o primeiro."}
+            />
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {eventos.data.map((evento) => (
               <CartaoEvento
                 key={evento.id}

@@ -1,12 +1,13 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { EllipsisVertical, Pencil, Trash2 } from "lucide-react";
+import { EllipsisVertical, Pencil, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CampoTexto, CampoValor } from "@/components/campos-inline";
 import { DialogoConfirmar } from "@/components/dialogo-confirmar";
 import { SeletorData } from "@/components/seletor-data";
-import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -80,7 +81,7 @@ export function TabelaOcorrencias({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
+    <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
       <Table>
         <TableHeader>
           <TableRow>
@@ -100,12 +101,12 @@ export function TabelaOcorrencias({
         <TableBody>
           {linhas.length === 0 && (
             <TableRow className="hover:bg-transparent">
-              <TableCell
-                colSpan={7}
-                className="h-28 text-center text-muted-foreground"
-              >
-                Nenhuma despesa neste mês. Use &ldquo;Adicionar despesa&rdquo;
-                para cadastrar.
+              <TableCell colSpan={7} className="h-auto p-0 whitespace-normal">
+                <EmptyState
+                  icon={Repeat}
+                  title="Nenhuma despesa neste mês"
+                  text="Use “Adicionar despesa” para cadastrar."
+                />
               </TableCell>
             </TableRow>
           )}
@@ -120,14 +121,14 @@ export function TabelaOcorrencias({
         </TableBody>
       </Table>
 
-      <div className="flex items-center justify-between border-t bg-muted px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex items-center justify-between border-t bg-muted px-4 py-3 text-[13px] text-muted-foreground">
         <span>
           {plural(linhas.length, "despesa recorrente", "despesas recorrentes")}{" "}
           neste mês
         </span>
         <span>
           Total real lançado:{" "}
-          <strong className="font-semibold tabular-nums text-brand">
+          <strong className="num text-[15px] font-semibold text-foreground">
             {formatarMoeda(somarValores(linhas.map((l) => l.valorReal)))}
           </strong>
         </span>
@@ -202,6 +203,7 @@ function LinhaDaTabela({
           rotulo={`Data de ${nome}`}
           valor={linha.vencimento}
           destaque={atrasada}
+          concluido={status === "concluida"}
           permitirLimpar={false}
           onChange={(vencimento) =>
             vencimento && aoSalvar(linha.id, { vencimento })
@@ -230,11 +232,11 @@ function LinhaDaTabela({
       </TableCell>
 
       <TableCell>
-        {status === "concluida" && <Badge variant="success">Concluída</Badge>}
+        {status === "concluida" && <StatusBadge tone="success">Concluída</StatusBadge>}
         {status === "falta_valor_real" && (
-          <Badge variant="warning">Falta valor real</Badge>
+          <StatusBadge tone="warning">Falta valor real</StatusBadge>
         )}
-        {status === "pendente" && <Badge variant="neutral">Pendente</Badge>}
+        {status === "pendente" && <StatusBadge tone="neutral">Pendente</StatusBadge>}
       </TableCell>
 
       <TableCell>

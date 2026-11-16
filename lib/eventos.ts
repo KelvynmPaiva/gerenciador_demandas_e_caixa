@@ -6,20 +6,28 @@ type ClienteSupabase = Awaited<ReturnType<typeof createClient>>;
 export type ResumoDoEvento = {
   totalReal: number; // soma do valor real de todos os itens do orçamento
   nfsPendentes: number; // itens com NF ainda "Lançamento pendente"
+  nfsVencidas: number; // dessas, as que já passaram do prazo para lançar (só conta se "hoje" for informado)
   tarefasPendentes: number; // tarefas (de qualquer seção) ainda não concluídas
 };
 
 export const RESUMO_VAZIO: ResumoDoEvento = {
   totalReal: 0,
   nfsPendentes: 0,
+  nfsVencidas: 0,
   tarefasPendentes: 0,
 };
 
 // Conta pura (sem banco), separada para poder ser testada.
 export function montarResumos(
   eventoIds: string[],
-  itens: { evento_id: string; valor_real: number | null; status_nf: string }[],
+  itens: {
+    evento_id: string;
+    valor_real: number | null;
+    status_nf: string;
+    prazo_nf?: string | null;
+  }[],
   tarefas: { secoes: { evento_id: string } }[],
+  hoje?: string, // "AAAA-MM-DD" em São Paulo
 ): Map<string, ResumoDoEvento> {
   const resumos = new Map<string, ResumoDoEvento>();
   for (const id of eventoIds) resumos.set(id, { ...RESUMO_VAZIO });
@@ -28,7 +36,10 @@ export function montarResumos(
     const resumo = resumos.get(item.evento_id);
     if (!resumo) continue;
     resumo.totalReal += item.valor_real ?? 0;
-    if (item.status_nf === "pendente") resumo.nfsPendentes += 1;
+    if (item.status_nf === "pendente") {
+      resumo.nfsPendentes += 1;
+      if (hoje && item.prazo_nf && item.prazo_nf < hoje) resumo.nfsVencidas += 1;
+    }
   }
 
   for (const tarefa of tarefas) {
@@ -48,13 +59,14 @@ export function montarResumos(
 export async function resumirEventos(
   supabase: ClienteSupabase,
   eventoIds: string[],
+  hoje?: string,
 ): Promise<Map<string, ResumoDoEvento>> {
   if (eventoIds.length === 0) return new Map();
 
   const [itens, tarefas] = await Promise.all([
     supabase
       .from("itens_orcamento")
-      .select("evento_id, valor_real, status_nf")
+      .select("evento_id, valor_real, status_nf, prazo_nf")
       .in("evento_id", eventoIds),
     supabase
       .from("tarefas")
@@ -66,5 +78,5 @@ export async function resumirEventos(
   const erro = itens.error ?? tarefas.error;
   if (erro) throw new Error(erro.message);
 
-  return montarResumos(eventoIds, itens.data ?? [], tarefas.data ?? []);
+  return montarResumos(eventoIds, itens.data ?? [], tarefas.data ?? [], hoje);
 }
