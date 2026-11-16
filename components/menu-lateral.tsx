@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { CircleCheck, Car, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sair } from "@/app/login/actions";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 type MarcaDoMenu = { id: string; nome: string };
@@ -79,6 +80,8 @@ export function MenuLateral({
           ))}
         </ul>
       </nav>
+
+      <ThemeToggle />
 
       {/* Usuário logado e botão Sair */}
       <div className="space-y-1 border-t p-3">
