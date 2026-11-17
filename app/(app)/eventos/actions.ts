@@ -13,7 +13,7 @@ const ERRO_NAO_ENCONTRADO = "Evento não encontrado. Atualize a página.";
 export type DadosEvento = {
   nome: string;
   tipo: string; // "evento" ou "acao"
-  dataInicio: string | null; // "AAAA-MM-DD"
+  dataInicio: string | null; // "AAAA-MM-DD"; obrigatória (null é recusado na validação)
   dataFim: string | null;
   linkExterno: string;
   observacao: string;
@@ -28,16 +28,17 @@ function prepararEvento(dados: DadosEvento) {
   if (dados.tipo !== "evento" && dados.tipo !== "acao") {
     return { erro: "Escolha o tipo: Evento ou Ação." } as const;
   }
+  // A data de início é obrigatória (ao criar e ao editar): é ela que diz em que mês
+  // o evento aparece na tela da marca. A data final continua opcional.
+  if (!dados.dataInicio) {
+    return { erro: "Informe a data de início." } as const;
+  }
   for (const data of [dados.dataInicio, dados.dataFim]) {
     if (data !== null && !dataValida(data)) {
       return { erro: "Data inválida." } as const;
     }
   }
-  // As datas são opcionais, mas a data final só faz sentido com a inicial
-  if (dados.dataFim && !dados.dataInicio) {
-    return { erro: "Informe a data de início." } as const;
-  }
-  if (dados.dataInicio && dados.dataFim && dados.dataFim < dados.dataInicio) {
+  if (dados.dataFim && dados.dataFim < dados.dataInicio) {
     return { erro: "A data final não pode ser antes da data de início." } as const;
   }
 

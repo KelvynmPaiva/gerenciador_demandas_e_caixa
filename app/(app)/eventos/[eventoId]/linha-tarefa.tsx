@@ -11,20 +11,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import type { AcoesDemandas, Tarefa } from "./demandas-tipos";
+import type { AcoesDaLinha, Tarefa } from "./demandas-tipos";
 
-// Uma tarefa na lista da seção. Clicar no texto abre o painel lateral de detalhes.
-export function LinhaTarefa({
-  tarefa,
-  hoje,
-  acoes,
-  aoAbrir,
-}: {
+type PropsDaLinha = {
   tarefa: Tarefa;
   hoje: string;
-  acoes: AcoesDemandas;
+  acoes: AcoesDaLinha;
   aoAbrir: (tarefaId: string) => void;
-}) {
+};
+
+// Uma tarefa na lista da seção. Clicar no texto abre o painel lateral de detalhes.
+// Pode ser arrastada pela alça (reordenar ou mudar de seção).
+export function LinhaTarefa(props: PropsDaLinha) {
   const {
     attributes,
     listeners,
@@ -33,8 +31,52 @@ export function LinhaTarefa({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: tarefa.id, data: { tipo: "tarefa" } });
+  } = useSortable({ id: props.tarefa.id, data: { tipo: "tarefa" } });
 
+  return (
+    <CorpoDaLinha
+      {...props}
+      refDaLinha={setNodeRef}
+      estilo={{ transform: CSS.Transform.toString(transform), transition }}
+      arrastando={isDragging}
+      alca={
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          aria-label={`Arrastar a tarefa ${props.tarefa.descricao}`}
+          title="Arrastar para reordenar ou mover de seção"
+          className="cursor-grab touch-none rounded p-1 text-muted-foreground opacity-0 outline-none transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/30 active:cursor-grabbing"
+        >
+          <GripVertical className="size-4" />
+        </button>
+      }
+    />
+  );
+}
+
+// A mesma linha, sem arrastar (lista "No Radar" da marca, que não tem ordem manual na v1).
+// Não usa useSortable, então não precisa estar dentro de um DndContext.
+export function LinhaTarefaFixa(props: PropsDaLinha) {
+  return <CorpoDaLinha {...props} />;
+}
+
+function CorpoDaLinha({
+  tarefa,
+  hoje,
+  acoes,
+  aoAbrir,
+  refDaLinha,
+  estilo,
+  arrastando = false,
+  alca,
+}: PropsDaLinha & {
+  refDaLinha?: (elemento: HTMLElement | null) => void;
+  estilo?: React.CSSProperties;
+  arrastando?: boolean;
+  alca?: React.ReactNode; // sem alça, a linha ganha recuo para o check não colar na borda
+}) {
   const [excluindo, setExcluindo] = useState(false);
   const [ocupado, iniciar] = useTransition();
 
@@ -57,24 +99,15 @@ export function LinhaTarefa({
 
   return (
     <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      ref={refDaLinha}
+      style={estilo}
       className={cn(
-        "group flex items-center gap-2 border-t border-border-subtle bg-card py-2 pr-3 pl-2 transition-colors first:border-t-0 hover:bg-row-hover",
-        isDragging && "opacity-40",
+        "group flex items-center gap-2 border-t border-border-subtle bg-card py-2 pr-3 transition-colors first:border-t-0 hover:bg-row-hover",
+        alca ? "pl-2" : "pl-4",
+        arrastando && "opacity-40",
       )}
     >
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
-        aria-label={`Arrastar a tarefa ${tarefa.descricao}`}
-        title="Arrastar para reordenar ou mover de seção"
-        className="cursor-grab touch-none rounded p-1 text-muted-foreground opacity-0 outline-none transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/30 active:cursor-grabbing"
-      >
-        <GripVertical className="size-4" />
-      </button>
+      {alca}
 
       <Checkbox
         checked={tarefa.concluida}

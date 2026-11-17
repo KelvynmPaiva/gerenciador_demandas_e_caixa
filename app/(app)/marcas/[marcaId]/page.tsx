@@ -1,18 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FolderOpen } from "lucide-react";
+import type { Tarefa } from "@/app/(app)/eventos/[eventoId]/demandas-tipos";
 import { BotaoNovoEvento } from "@/app/(app)/eventos/dialogo-evento";
 import { EmptyState } from "@/components/empty-state";
 import { Pagina } from "@/components/pagina";
 import { Badge } from "@/components/ui/badge";
-import { fimDaProximaSemana, hojeSaoPaulo, lerMes } from "@/lib/datas";
+import {
+  cobreOMes,
+  dataEmSaoPaulo,
+  fimDaProximaSemana,
+  hojeSaoPaulo,
+  lerMes,
+} from "@/lib/datas";
 import { ordenarDespesas, type NotaComMeses } from "@/lib/despesas";
 import { RESUMO_VAZIO, resumirEventos } from "@/lib/eventos";
 import { plural } from "@/lib/formato";
+import { TIPOS_DE_PENDENCIA } from "@/lib/pendencias";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { CartaoEvento } from "./cartao-evento";
 import { BotaoAdicionarDespesa } from "./dialogo-despesa";
+import { ListaRadar } from "./lista-radar";
 import { SeletorMes } from "./seletor-mes";
 import { TabelaOcorrencias, type LinhaOcorrencia } from "./tabela-ocorrencias";
 
@@ -41,6 +50,7 @@ export default async function MarcaPage({
     eventos,
     ocorrencias,
     pendencias,
+    radar,
   ] = await Promise.all([
     // Marca inexistente (ou id inválido na URL) → página "não encontrada"
     supabase
@@ -62,7 +72,7 @@ export default async function MarcaPage({
     // Eventos da lista (ativos ou arquivados, conforme o filtro). Os mais próximos primeiro.
     supabase
       .from("eventos")
-      .select("id, nome, tipo, data_inicio, data_fim")
+      .select("id, nome, tipo, data_inicio, data_fim, criado_em")
       .eq("marca_id", marcaId)
       .eq("arquivado", verArquivados)
       .order("data_inicio", { ascending: true, nullsFirst: false })
@@ -76,20 +86,65 @@ export default async function MarcaPage({
       .eq("notas_recorrentes.marca_id", marcaId)
       .eq("mes_referencia", `${mes}-01`),
     // Pendências = o mesmo que aparece no Painel: atrasado ou até o domingo da próxima semana
+    // (inclui o Radar com prazo). Só os tipos que o Painel mostra, para os números baterem.
     supabase
       .from("vw_pendencias")
       .select("id", { count: "exact", head: true })
       .eq("marca_id", marcaId)
+      .in("tipo", [...TIPOS_DE_PENDENCIA])
       .lte("data", fimDaProximaSemana(hoje)),
+    // No Radar: todos os itens da marca (pendentes e concluídos), na ordem de criação.
+    // Item já promovido para tarefa sai da lista (a promoção é da segunda etapa).
+    supabase
+      .from("itens_radar")
+      .select(
+        "id, descricao, prazo, concluida, observacao, link_externo, subitens_radar(id, descricao, prazo, concluida, observacao)",
+      )
+      .eq("marca_id", marcaId)
+      .is("promovido_em", null)
+      .order("ordem")
+      .order("criado_em")
+      .order("ordem", { referencedTable: "subitens_radar" })
+      .order("criado_em", { referencedTable: "subitens_radar" }),
   ]);
   if (!marca) notFound();
   if (eventos.error) throw new Error(eventos.error.message);
   if (notas.error) throw new Error(notas.error.message);
   if (ocorrencias.error) throw new Error(ocorrencias.error.message);
+  if (radar.error) throw new Error(radar.error.message);
+
+  // Mesmo formato das tarefas de evento: a lista reaproveita LinhaTarefa/PainelTarefa
+  const itensDoRadar: Tarefa[] = radar.data.map((item) => ({
+    id: item.id,
+    descricao: item.descricao,
+    prazo: item.prazo,
+    concluida: item.concluida,
+    observacao: item.observacao,
+    linkExterno: item.link_externo,
+    subtarefas: item.subitens_radar.map((subitem) => ({
+      id: subitem.id,
+      descricao: subitem.descricao,
+      prazo: subitem.prazo,
+      concluida: subitem.concluida,
+      observacao: subitem.observacao,
+    })),
+  }));
+
+  // Só os eventos que cobrem o mês escolhido (do início ao fim; sem fim = só o mês de início).
+  // Filtra aqui, antes de buscar os resumos, para não somar NFs/tarefas de eventos que não aparecem.
+  // Eventos antigos sem data de início (antes de ela ser obrigatória) entram no mês em que
+  // foram criados, para não sumirem da tela; ao editar, a data passa a ser exigida.
+  const eventosDoMes = eventos.data.filter((evento) =>
+    cobreOMes(
+      evento.data_inicio ?? dataEmSaoPaulo(evento.criado_em),
+      evento.data_fim,
+      mes,
+    ),
+  );
 
   const resumos = await resumirEventos(
     supabase,
-    eventos.data.map((evento) => evento.id),
+    eventosDoMes.map((evento) => evento.id),
     hoje,
   );
 
@@ -187,6 +242,14 @@ export default async function MarcaPage({
         <TabelaOcorrencias key={mes} ocorrencias={linhas} hoje={hoje} />
       </section>
 
+      {/* Entre Notas recorrentes e Eventos. Não depende do mês: o Radar é da marca. */}
+      <ListaRadar
+        itens={itensDoRadar}
+        marcaId={marcaId}
+        marcaNome={marca.nome}
+        hoje={hoje}
+      />
+
       <section id="eventos" className="mt-12 scroll-mt-20">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -217,17 +280,21 @@ export default async function MarcaPage({
           <BotaoNovoEvento marcaId={marcaId} />
         </div>
 
-        {eventos.data.length === 0 ? (
+        {eventosDoMes.length === 0 ? (
           <div className="rounded-lg border border-dashed bg-card">
             <EmptyState
               icon={FolderOpen}
-              title={verArquivados ? "Nenhum evento arquivado" : "Nenhum evento ativo"}
-              text={verArquivados ? undefined : "Use “Novo evento” para criar o primeiro."}
+              title={
+                verArquivados
+                  ? "Nenhum evento arquivado neste mês"
+                  : "Nenhum evento ativo neste mês"
+              }
+              text={verArquivados ? undefined : "Use “Novo evento” para criar um."}
             />
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {eventos.data.map((evento) => (
+            {eventosDoMes.map((evento) => (
               <CartaoEvento
                 key={evento.id}
                 evento={evento}

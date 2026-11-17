@@ -28,8 +28,8 @@ Deploy: Vercel, a partir do repositório; as migrations do banco são aplicadas 
 proxy.ts                 sessão + redireciona para /login (matcher exclui estáticos)
 app/login/               login (Server Action) — fora do grupo (app)
 app/(app)/layout.tsx     menu lateral + 2ª barreira de auth
-app/(app)/page.tsx       Painel (vw_pendencias)
-app/(app)/marcas/        lista de marcas; [marcaId]/ = notas recorrentes do mês + eventos
+app/(app)/page.tsx       Painel (vw_pendencias + bloco "No Radar" com itens sem prazo)
+app/(app)/marcas/        lista de marcas; [marcaId]/ = notas recorrentes do mês + No Radar + eventos do mês
 app/(app)/eventos/[eventoId]/  abas ?aba=orcamento|demandas
   actions*.ts            Server Actions ("use server") ao lado da tela que as usa
 components/              compartilhados (DateChip, StatusBadge, ResumoEvento, EmptyState, ThemeToggle, NavegacaoMobile...); ui/ = shadcn já customizado pela repaginação (rode `git diff` antes de qualquer `npx shadcn add`)
@@ -40,7 +40,10 @@ lib/marcas.ts            listarMarcasAtivas (cache por requisição)
 lib/acoes.ts             helpers das actions: atualizarTelas, valorValido, ehUuid, listaDeIds
 lib/despesas.ts          despesas recorrentes: sugestões do mês, nome repetido, ordem da tabela
 lib/eventos.ts           resumo dos cartões de evento (total real, NFs e tarefas pendentes)
-supabase/migrations/     SQL (rodado à mão no SQL Editor do Supabase)
+lib/status.ts            fonte única do texto/tom de status de NFs e despesas: só "Pendente" e "Lançado"
+lib/listas.ts            pendentesPrimeiro (concluídos no fim) e temConteudo (colunas Observação/Link)
+lib/pendencias.ts        tipos do Painel (TIPOS_DE_PENDENCIA, inclui radar/subitem_radar), endereços, ordem
+supabase/migrations/     SQL (aplicado conforme "Acesso ao Supabase")
 types/database.ts        tipos GERADOS do Supabase — não editar à mão; regenerar se o schema mudar
 spec/                    documentação funcional e design (DESIGN.md)
 docs/CHANGELOG.md        histórico de funcionalidades e mudanças
@@ -60,11 +63,32 @@ docs/CHANGELOG.md        histórico de funcionalidades e mudanças
 - Não commitar sem pedido. Commits em português, `tipo(escopo): resumo`.
 
 ## Banco de dados
-`marcas` → `notas_recorrentes` → `ocorrencias_mensais`; `marcas` → `eventos` → `itens_orcamento` e `secoes` → `tarefas` → `subtarefas`; view `vw_pendencias` (security_invoker). Schema completo em `supabase/migrations/` (0001 inicial + 0002 despesas manuais).
-- Migrations novas: `supabase/migrations/NNNN_nome.sql`, e **avisar que precisam ser rodadas no Supabase**; depois regenerar `types/database.ts`.
+`marcas` → `notas_recorrentes` → `ocorrencias_mensais`; `marcas` → `eventos` → `itens_orcamento` e `secoes` → `tarefas` → `subtarefas`; `marcas` → `itens_radar` → `subitens_radar`; view `vw_pendencias` (security_invoker; tipos `tarefa`, `subtarefa`, `nf`, `recorrente`, `radar`, `subitem_radar`). Schema completo em `supabase/migrations/` (0001 inicial + 0002 despesas manuais + 0003 No Radar + 0004 data de início obrigatória, todas aplicadas).
+- **No Radar (desde a 0003):** `itens_radar` espelha `tarefas` mas pendura na marca (sem evento/seção); `subitens_radar` espelha `subtarefas`. Só itens/subitens **com prazo**, pendentes e com `promovido_em` nulo entram na `vw_pendencias`; os sem prazo o Painel busca à parte. `promovido_para_tarefa_id`/`promovido_em` são da segunda etapa (promover para tarefa de evento), ainda sem tela. Quem conta linhas da view filtra por `TIPOS_DE_PENDENCIA` (`lib/pendencias.ts`) para bater com o Painel.
+- **Data de início do evento** é obrigatória no app (formulário e action). A 0004 só põe `not null` no banco se nenhum evento estiver sem data: hoje 2 eventos antigos ("Demandas Gerais" e "Campanha de Natal Instituto Eurobike") seguem sem `data_inicio`, então a coluna continua anulável; a tela da marca os mostra no mês de criação. Depois de preencher as datas, rodar a 0004 de novo.
+- Migrations novas: `supabase/migrations/NNNN_nome.sql`; depois de aplicar, regenerar `types/database.ts`. Como aplicar: seção "Acesso ao Supabase" abaixo. Sem o arquivo `.env.supabase`, **avisar que precisam ser rodadas à mão** no SQL Editor.
 - **Despesas recorrentes (desde a 0002):** `notas_recorrentes` = só o nome (e observação) da despesa, **fonte única do nome** (tela e `vw_pendencias` leem dela). Cada mês é uma linha em `ocorrencias_mensais` criada à mão (`criarOcorrencia`), com data (`vencimento`) livre; `unique (nota_recorrente_id, mes_referencia)` impede duplicar no mês. Não há geração automática. Excluir a nota (`excluirNota`) apaga todos os meses (cascade); `excluirOcorrencia` apaga só um mês e mantém a nota (volta como sugestão). Nome de nota não se repete na marca (`notaComMesmoNome`, sem diferenciar maiúsculas/espaços), na criação e ao renomear.
 - Só **valor real** em itens de evento e despesas: não existem mais valor orçado/previsto.
 - `ocorrencias_mensais.concluida` é coluna gerada (check **e** valor real) — nunca enviar no update.
+
+## Acesso ao Supabase (migrations e tipos)
+Credenciais de administração ficam em `.env.supabase` (raiz, **fora do git**: o `.gitignore` já ignora `.env*`) com `SUPABASE_ACCESS_TOKEN` (token pessoal, começa com `sbp_`) e `SUPABASE_PROJECT_REF` (o trecho antes de `.supabase.co` na URL do projeto). Nunca ler esse arquivo para exibi-lo, nunca imprimir o token, nunca copiá-lo para `.env.local`, código, docs ou commit, e nunca usar `service_role` no app.
+
+Como aplicar uma migration (API de gerenciamento, não precisa de senha do banco nem de `supabase link`):
+```bash
+set -a; . ./.env.supabase; set +a
+curl -sS -X POST "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/database/query" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+  --data @<(node -e 'console.log(JSON.stringify({query: require("fs").readFileSync(process.argv[1],"utf8")}))' supabase/migrations/NNNN_nome.sql)
+```
+Regenerar tipos: `set -a; . ./.env.supabase; set +a; npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_REF" > types/database.ts` (único jeito aceito de alterar `types/database.ts`; conferir o `git diff` depois).
+
+Regras de segurança (o banco é o de produção, sem ambiente de teste):
+- **Antes de aplicar**: mostrar o SQL resumido e **pedir confirmação do usuário, a cada migration**. Autorização para uma não vale para a próxima.
+- Migration só aditiva por padrão (criar tabela/coluna/índice/policy, de preferência idempotente com `if not exists`). `drop`, `truncate`, `delete` sem `where` ou `alter ... type` que perca dado exigem pedido explícito do usuário naquela tarefa.
+- Toda tabela nova precisa de RLS ligada e da policy `autenticados_acesso_total`, igual à 0001.
+- Depois de aplicar: conferir que as tabelas/colunas existem (consulta de leitura), regenerar os tipos, rodar `npm run typecheck`, e registrar no `docs/CHANGELOG.md`. Se a chamada falhar, parar e relatar o erro; não tentar contornar com outras credenciais.
+- Sem `.env.supabase`, não tentar acessar o banco: avisar que a migration precisa ser rodada à mão.
 
 ## Decisões importantes
 - **RLS aberta a qualquer usuário autenticado** (equipe de 2 pessoas, tudo compartilhado) → o cadastro público deve ficar **desligado** no Supabase; é a única barreira.
@@ -72,13 +96,15 @@ docs/CHANGELOG.md        histórico de funcionalidades e mudanças
 - **Auth em duas camadas** (`proxy.ts` + layout `(app)`) e `createClientAutenticado()` em toda action: defesa em profundidade.
 - **Helpers de actions centralizados em `lib/acoes.ts`** e consultas deduplicadas com `React.cache` (commits `6f54ee6`, `aa11830`) para evitar duplicação e cascatas.
 - **Testes só em `lib/`** (lógica pura, sem rede); telas e actions não têm teste automatizado.
-- **Migrations manuais** no SQL Editor do Supabase, sem CLI/CI de banco.
+- **Migrations aplicadas pelo Claude, com confirmação** (ver "Acesso ao Supabase"). O app em si continua só com a chave pública; o acesso de administração vive fora do app e fora do git.
 
 ## Pendências conhecidas
 - Sem testes de Server Actions nem E2E; só `lib/` é coberto.
-- Migrations não têm automação: risco de o banco divergir de `supabase/migrations/` e de `types/database.ts`.
+- Não há histórico de migrations no banco (0001 e 0002 foram rodadas à mão; 0003 e 0004, em 16/11/2026, também fora do CLI): por isso não usar `supabase db push`, que tentaria rodar tudo de novo. Risco de o banco divergir de `supabase/migrations/` e de `types/database.ts`.
 - Qualquer usuário autenticado vê e edita tudo (sem papéis/permissões por marca).
-- `npm test` falha neste ambiente com `Cannot read properties of undefined (reading 'config')` (também na `main`, mesmo após `npm ci`); investigar a instalação do vitest 5.1.
+- `npm test` falha com `Cannot read properties of undefined (reading 'config')` quando rodado no Git Bash da ferramenta Bash do Claude Code, mas passa (9 arquivos, 50 testes em 16/11/2026) no PowerShell. Rode os testes pelo PowerShell; causa no Bash ainda não identificada (não é `NODE_OPTIONS`).
+- 2 eventos antigos sem `data_inicio` (ver Banco de dados): preencher pela tela e rodar a 0004 de novo.
+- No Radar: promoção de item para tarefa de evento ainda não existe (segunda etapa).
 
 ## Regra permanente de documentação
 Ao terminar qualquer funcionalidade ou mudança relevante, **antes de dizer que terminou**:

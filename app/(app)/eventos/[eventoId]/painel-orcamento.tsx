@@ -1,7 +1,7 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
-import { Receipt, Trash2 } from "lucide-react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
+import { EllipsisVertical, Link2, MessageSquareText, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BotaoLink } from "@/components/botao-link";
 import { CampoTexto, CampoValor } from "@/components/campos-inline";
@@ -11,6 +11,13 @@ import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
@@ -19,6 +26,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatarMoeda, plural, somarValores } from "@/lib/formato";
+import { pendentesPrimeiro, temConteudo } from "@/lib/listas";
+import {
+  descreverAlternancia,
+  ROTULO_DO_STATUS,
+  statusOposto,
+  TOM_DO_STATUS,
+} from "@/lib/status";
 import { AdicionarItem } from "./adicionar-item";
 import { atualizarItem, excluirItem, type CamposItem } from "./actions";
 
@@ -33,6 +47,9 @@ export type ItemOrcamento = {
   linkExterno: string | null;
   observacao: string | null;
 };
+
+// Colunas que só aparecem quando alguma linha tem conteúdo
+type ColunaOpcional = "observacao" | "link";
 
 export function PainelOrcamento({
   itens,
@@ -62,6 +79,22 @@ export function PainelOrcamento({
     });
   }
 
+  // Colunas que a pessoa abriu pelo menu ("Adicionar observação/link") mesmo sem
+  // nenhuma linha preenchida ainda, para poder digitar a primeira.
+  const [colunasAbertas, setColunasAbertas] = useState<Set<ColunaOpcional>>(new Set());
+  const mostrar: Record<ColunaOpcional, boolean> = {
+    observacao: colunasAbertas.has("observacao") || temConteudo(linhas, (l) => l.observacao),
+    link: colunasAbertas.has("link") || temConteudo(linhas, (l) => l.linkExterno),
+  };
+
+  function abrirColuna(coluna: ColunaOpcional) {
+    setColunasAbertas((atuais) => (atuais.has(coluna) ? atuais : new Set(atuais).add(coluna)));
+  }
+
+  // Ordenado depois do otimista: ao clicar no status, o item já desce (ou sobe) na hora
+  const ordenadas = pendentesPrimeiro(linhas, (l) => l.statusNf === "lancada");
+  const qtdColunas = 5 + Number(mostrar.observacao) + Number(mostrar.link) + 1;
+
   // Totais do evento: só o valor real (não existe mais valor orçado)
   const totalReal = somarValores(linhas.map((l) => l.valorReal));
 
@@ -85,7 +118,8 @@ export function PainelOrcamento({
               <TableHead className="text-right">Valor real</TableHead>
               <TableHead>Status da NF</TableHead>
               <TableHead>Prazo p/ lançar</TableHead>
-              <TableHead>Observação / link</TableHead>
+              {mostrar.observacao && <TableHead>Observação</TableHead>}
+              {mostrar.link && <TableHead className="w-12">Link</TableHead>}
               <TableHead className="w-10">
                 <span className="sr-only">Ações</span>
               </TableHead>
@@ -94,7 +128,7 @@ export function PainelOrcamento({
           <TableBody className="max-md:block">
             {linhas.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="h-auto whitespace-normal p-0">
+                <TableCell colSpan={qtdColunas} className="h-auto whitespace-normal p-0">
                   <EmptyState
                     icon={Receipt}
                     title="Nenhum item no orçamento"
@@ -103,11 +137,13 @@ export function PainelOrcamento({
                 </TableCell>
               </TableRow>
             )}
-            {linhas.map((item) => (
+            {ordenadas.map((item) => (
               <LinhaDoItem
                 key={item.id}
                 item={item}
                 hoje={hoje}
+                mostrar={mostrar}
+                aoAbrirColuna={abrirColuna}
                 aoSalvar={salvar}
               />
             ))}
@@ -134,18 +170,42 @@ export function PainelOrcamento({
 function LinhaDoItem({
   item,
   hoje,
+  mostrar,
+  aoAbrirColuna,
   aoSalvar,
 }: {
   item: ItemOrcamento;
   hoje: string;
+  mostrar: Record<ColunaOpcional, boolean>;
+  aoAbrirColuna: (coluna: ColunaOpcional) => void;
   aoSalvar: (id: string, campos: CamposItem) => void;
 }) {
   const [excluindo, setExcluindo] = useState(false);
   const [ocupado, iniciar] = useTransition();
+  const [linkAberto, setLinkAberto] = useState(false);
+  const campoObservacao = useRef<HTMLInputElement>(null);
+  // Campo pedido pelo menu: só dá para focar depois que o menu fecha
+  const campoPedido = useRef<ColunaOpcional | null>(null);
 
   const lancada = item.statusNf === "lancada";
   // Prazo vencido só importa enquanto a NF ainda não foi lançada
   const prazoVencido = !lancada && item.prazoNf !== null && item.prazoNf < hoje;
+
+  function pedirCampo(coluna: ColunaOpcional) {
+    campoPedido.current = coluna;
+    aoAbrirColuna(coluna); // a coluna aparece para receber o primeiro preenchimento
+  }
+
+  function aoFecharMenu(evento: Event) {
+    const campo = campoPedido.current;
+    if (!campo) return;
+    evento.preventDefault(); // o foco vai para o campo, não de volta para o botão do menu
+    campoPedido.current = null;
+    requestAnimationFrame(() => {
+      if (campo === "observacao") campoObservacao.current?.focus();
+      else setLinkAberto(true);
+    });
+  }
 
   function confirmarExclusao() {
     iniciar(async () => {
@@ -191,18 +251,16 @@ function LinhaDoItem({
       </TableCell>
 
       <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
-        {/* Um clique alterna entre "Lançamento pendente" (vermelho) e "Lançada" (verde) */}
+        {/* Um clique alterna entre "Pendente" (vermelho) e "Lançado" (verde) */}
         <button
           type="button"
-          onClick={() =>
-            aoSalvar(item.id, { statusNf: lancada ? "pendente" : "lancada" })
-          }
-          aria-label={`NF de ${item.servico}: ${lancada ? "lançada" : "lançamento pendente"}. Clique para alternar`}
-          title="Clique para alternar"
+          onClick={() => aoSalvar(item.id, { statusNf: statusOposto(item.statusNf) })}
+          aria-label={descreverAlternancia(`NF de ${item.servico}`, item.statusNf)}
+          title={`Clique para mudar para ${ROTULO_DO_STATUS[statusOposto(item.statusNf)]}`}
           className="rounded-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
         >
-          <StatusBadge tone={lancada ? "success" : "danger"} className="cursor-pointer">
-            {lancada ? "Lançada" : "Pendente"}
+          <StatusBadge tone={TOM_DO_STATUS[item.statusNf]} className="cursor-pointer">
+            {ROTULO_DO_STATUS[item.statusNf]}
           </StatusBadge>
         </button>
       </TableCell>
@@ -219,33 +277,51 @@ function LinhaDoItem({
         />
       </TableCell>
 
-      <TableCell className="min-w-[160px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2">
-        <div className="flex items-center gap-1">
+      {mostrar.observacao && (
+        <TableCell className="min-w-[160px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2">
           <CampoTexto
+            ref={campoObservacao}
             rotulo={`Observação de ${item.servico}`}
             placeholder="Observação"
             valor={item.observacao}
             onSalvar={(observacao) => aoSalvar(item.id, { observacao })}
           />
+        </TableCell>
+      )}
+
+      {mostrar.link && (
+        <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
           <BotaoLink
             rotulo={`Link de ${item.servico}`}
             valor={item.linkExterno}
+            aberto={linkAberto}
+            aoMudarAberto={setLinkAberto}
             onSalvar={(linkExterno) => aoSalvar(item.id, { linkExterno })}
           />
-        </div>
-      </TableCell>
+        </TableCell>
+      )}
 
       <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:absolute max-md:top-2 max-md:right-2">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Excluir ${item.servico}`}
-          title="Excluir item"
-          className="hover:bg-danger-subtle hover:text-danger-text"
-          onClick={() => setExcluindo(true)}
-        >
-          <Trash2 />
-        </Button>
+        {/* modal={false}: evita que o menu trave a tela ao abrir uma janela a partir dele */}
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label={`Ações do item ${item.servico}`}>
+              <EllipsisVertical />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52" onCloseAutoFocus={aoFecharMenu}>
+            <DropdownMenuItem onSelect={() => pedirCampo("observacao")}>
+              <MessageSquareText /> {item.observacao ? "Editar observação" : "Adicionar observação"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => pedirCampo("link")}>
+              <Link2 /> {item.linkExterno ? "Editar link" : "Adicionar link"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={() => setExcluindo(true)}>
+              <Trash2 /> Excluir item
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <DialogoConfirmar
           aberto={excluindo}
           aoMudar={setExcluindo}

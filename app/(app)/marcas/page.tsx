@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { fimDaProximaSemana, hojeSaoPaulo } from "@/lib/datas";
 import { plural } from "@/lib/formato";
 import { listarMarcasAtivas } from "@/lib/marcas";
+import { TIPOS_DE_PENDENCIA } from "@/lib/pendencias";
 import { createClient } from "@/lib/supabase/server";
 import { MenuMarca } from "./menu-marca";
 import { NovaMarca } from "./nova-marca";
@@ -34,8 +35,13 @@ export default async function MarcasPage() {
     listarMarcasAtivas(), // já buscada pelo layout nesta requisição (cache)
     supabase.from("eventos").select("marca_id").eq("arquivado", false),
     // Pendências = o mesmo que aparece no Painel: itens atrasados ou
-    // com data até o domingo da próxima semana.
-    supabase.from("vw_pendencias").select("marca_id, data").lte("data", limiteDoPainel),
+    // com data até o domingo da próxima semana (inclui o Radar com prazo).
+    // Só os tipos que o Painel mostra, para os números baterem com ele.
+    supabase
+      .from("vw_pendencias")
+      .select("marca_id, data")
+      .in("tipo", [...TIPOS_DE_PENDENCIA])
+      .lte("data", limiteDoPainel),
   ]);
 
   const erro = marcas.error ?? eventos.error ?? pendencias.error;

@@ -10,7 +10,9 @@ import {
 import { formatarData, plural } from "@/lib/formato";
 import {
   ordenarPendencias,
+  ordenarSemPrazo,
   tipoValido,
+  type ItemRadarSemPrazo,
   type Pendencia,
 } from "@/lib/pendencias";
 import { listarMarcasAtivas } from "@/lib/marcas";
@@ -31,20 +33,67 @@ export default async function PainelPage() {
   const limite = fimDaProximaSemana(hoje); // domingo da próxima semana
 
   // Despesas recorrentes entram aqui só quando cadastradas no mês (não há geração automática).
-  const [pendencias, ocorrencias, marcas] = await Promise.all([
-    // Tudo que está atrasado ou vence até o fim da próxima semana
-    supabase.from("vw_pendencias").select("*").lte("data", limite),
-    // A view não diz se o check da despesa recorrente já foi marcado: busca aqui
-    supabase
-      .from("ocorrencias_mensais")
-      .select("id, check_marcado, valor_real")
-      .eq("concluida", false)
-      .lte("vencimento", limite),
-    listarMarcasAtivas(), // já buscada pelo layout nesta requisição (cache)
-  ]);
+  const [pendencias, ocorrencias, marcas, radarSemPrazo, subitensSemPrazo] =
+    await Promise.all([
+      // Tudo que está atrasado ou vence até o fim da próxima semana
+      // (inclui itens e subitens do Radar COM prazo)
+      supabase.from("vw_pendencias").select("*").lte("data", limite),
+      // A view não diz se o check da despesa recorrente já foi marcado: busca aqui
+      supabase
+        .from("ocorrencias_mensais")
+        .select("id, check_marcado, valor_real")
+        .eq("concluida", false)
+        .lte("vencimento", limite),
+      listarMarcasAtivas(), // já buscada pelo layout nesta requisição (cache)
+      // Bloco "No Radar": itens sem prazo não estão na view (não têm data).
+      // Mesmo critério da view para os com prazo: pendente e ainda não promovido.
+      supabase
+        .from("itens_radar")
+        .select("id, descricao, marca_id, marcas(nome)")
+        .eq("concluida", false)
+        .is("prazo", null)
+        .is("promovido_em", null),
+      // Subitens sem prazo, só se o item principal estiver pendente e não promovido
+      // (a view faz o mesmo com os subitens com prazo)
+      supabase
+        .from("subitens_radar")
+        .select(
+          "id, descricao, itens_radar!inner(descricao, marca_id, concluida, promovido_em, marcas(nome))",
+        )
+        .eq("concluida", false)
+        .is("prazo", null)
+        .eq("itens_radar.concluida", false)
+        .is("itens_radar.promovido_em", null),
+    ]);
 
-  const erro = pendencias.error ?? ocorrencias.error ?? marcas.error;
+  const erro =
+    pendencias.error ??
+    ocorrencias.error ??
+    marcas.error ??
+    radarSemPrazo.error ??
+    subitensSemPrazo.error;
   if (erro) throw new Error(erro.message);
+
+  const semPrazo: ItemRadarSemPrazo[] = [
+    ...(radarSemPrazo.data ?? []).map((item) => ({
+      chave: `radar:${item.id}`,
+      id: item.id,
+      tipo: "radar" as const,
+      titulo: item.descricao,
+      itemPai: null,
+      marcaId: item.marca_id,
+      marcaNome: item.marcas.nome,
+    })),
+    ...(subitensSemPrazo.data ?? []).map((subitem) => ({
+      chave: `subitem_radar:${subitem.id}`,
+      id: subitem.id,
+      tipo: "subitem_radar" as const,
+      titulo: subitem.descricao,
+      itemPai: subitem.itens_radar.descricao,
+      marcaId: subitem.itens_radar.marca_id,
+      marcaNome: subitem.itens_radar.marcas.nome,
+    })),
+  ];
 
   const listaDeMarcas = marcas.data ?? [];
   const situacaoDasOcorrencias = new Map(
@@ -113,7 +162,11 @@ export default async function PainelPage() {
         </p>
         <h1 className="text-display mt-1">{saudacao()}, equipe</h1>
 
-        <BlocosPainel pendencias={ordenarPendencias(itens)} hoje={hoje}>
+        <BlocosPainel
+          pendencias={ordenarPendencias(itens)}
+          radarSemPrazo={ordenarSemPrazo(semPrazo)}
+          hoje={hoje}
+        >
           <aside aria-labelledby="marcas-do-painel" className="rounded-lg border bg-card shadow-xs">
             <div className="flex items-center px-4 pt-3 pb-1.5">
               <h2 id="marcas-do-painel" className="text-sm font-semibold">

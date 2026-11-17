@@ -101,6 +101,13 @@ function FormularioEvento({
   function enviar(e: FormEvent) {
     e.preventDefault();
 
+    // O seletor de data não é um <input required>: a checagem é feita aqui
+    // (e de novo na action, que é quem garante a regra)
+    if (!dataInicio) {
+      toast.error("Informe a data de início.");
+      return;
+    }
+
     const dados = {
       nome,
       tipo,
@@ -170,11 +177,12 @@ function FormularioEvento({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Data de início (opcional)</Label>
+          <Label>Data de início</Label>
           <SeletorData
-            rotulo="Data de início"
+            rotulo="Data de início (obrigatória)"
             valor={dataInicio}
             onChange={setDataInicio}
+            permitirLimpar={false}
           />
         </div>
         <div className="space-y-2">

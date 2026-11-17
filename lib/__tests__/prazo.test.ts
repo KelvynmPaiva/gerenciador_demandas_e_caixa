@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contagemDeDias, rotuloRelativo, urgencia } from "@/lib/prazo";
+import { contagemDeDias, diaCurto, rotuloRelativo, urgencia } from "@/lib/prazo";
 
 const HOJE = "2026-11-10"; // terça-feira
 
@@ -20,6 +20,11 @@ describe("prazo", () => {
     expect(rotuloRelativo("2026-11-09", HOJE)).toBe("há 1 dia");
     expect(rotuloRelativo("2026-11-03", HOJE)).toBe("há 7 dias");
     expect(rotuloRelativo("2026-11-17", HOJE)).toMatch(/^ter,? 17\/11$/);
+  });
+
+  it("escreve um dia curto (subtítulo do grupo Hoje)", () => {
+    expect(diaCurto("2026-11-16")).toBe("16 nov");
+    expect(diaCurto("2026-12-05")).toBe("5 dez");
   });
 
   it("conta os dias para o cabeçalho do evento", () => {

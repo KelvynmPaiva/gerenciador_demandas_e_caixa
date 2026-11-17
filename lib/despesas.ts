@@ -40,6 +40,17 @@ export function notaComMesmoNome<T extends { id: string; nome: string }>(
   );
 }
 
+// Regra de negócio (igual à coluna gerada ocorrencias_mensais.concluida no banco):
+// a despesa do mês só está "Lançado" com o check marcado E o valor real preenchido.
+// Check sem valor continua "Pendente" (com aviso no campo de valor), assim a tela
+// mostra o mesmo que o painel e os contadores, que leem a coluna do banco.
+export function ocorrenciaConcluida(ocorrencia: {
+  checkMarcado: boolean;
+  valorReal: number | null;
+}): boolean {
+  return ocorrencia.checkMarcado && ocorrencia.valorReal !== null;
+}
+
 // Ordem da tabela do mês: data crescente e, no empate, nome da nota (pt-BR).
 // Feita aqui porque o nome mora na nota, não na despesa do mês.
 export function ordenarDespesas<

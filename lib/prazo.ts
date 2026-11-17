@@ -48,6 +48,11 @@ function mesCurto(data: string): string {
   return MES_CURTO.format(new Date(Date.UTC(ano, mes - 1, dia))).replace(".", "");
 }
 
+// "2026-11-16" → "16 nov" (subtítulo do grupo Hoje no painel)
+export function diaCurto(data: string): string {
+  return `${Number(data.slice(8, 10))} ${mesCurto(data)}`;
+}
+
 // "2026-11-15","2026-11-22" → "15 – 22 nov"; entre meses: "30 nov – 6 dez"
 export function intervaloCurto(inicio: string, fim: string): string {
   const diaInicio = Number(inicio.slice(8, 10));

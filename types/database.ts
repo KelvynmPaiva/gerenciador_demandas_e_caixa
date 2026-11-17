@@ -1,6 +1,5 @@
-// Tipos gerados pelo Supabase (generate_typescript_types) em 08/11/2026.
-// Atualizados em 15/11/2026 para a migration 0002_despesas_manuais (já aplicada;
-// estrutura conferida contra `supabase gen types`).
+// Tipos gerados pelo Supabase (`supabase gen types`), atualizados em 16/11/2026
+// para as migrations 0003_no_radar e 0004 (já aplicadas).
 // Depois de qualquer mudança no banco, gere de novo e substitua este arquivo:
 //   npx supabase gen types typescript --project-id tzmvxismprraeawibbbw > types/database.ts
 //
@@ -116,6 +115,66 @@ export type Database = {
             columns: ["evento_id"]
             isOneToOne: false
             referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_radar: {
+        Row: {
+          concluida: boolean
+          concluida_em: string | null
+          criado_em: string
+          descricao: string
+          id: string
+          link_externo: string | null
+          marca_id: string
+          observacao: string | null
+          ordem: number
+          prazo: string | null
+          promovido_em: string | null
+          promovido_para_tarefa_id: string | null
+        }
+        Insert: {
+          concluida?: boolean
+          concluida_em?: string | null
+          criado_em?: string
+          descricao: string
+          id?: string
+          link_externo?: string | null
+          marca_id: string
+          observacao?: string | null
+          ordem?: number
+          prazo?: string | null
+          promovido_em?: string | null
+          promovido_para_tarefa_id?: string | null
+        }
+        Update: {
+          concluida?: boolean
+          concluida_em?: string | null
+          criado_em?: string
+          descricao?: string
+          id?: string
+          link_externo?: string | null
+          marca_id?: string
+          observacao?: string | null
+          ordem?: number
+          prazo?: string | null
+          promovido_em?: string | null
+          promovido_para_tarefa_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_radar_marca_id_fkey"
+            columns: ["marca_id"]
+            isOneToOne: false
+            referencedRelation: "marcas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_radar_promovido_para_tarefa_id_fkey"
+            columns: ["promovido_para_tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "tarefas"
             referencedColumns: ["id"]
           },
         ]
@@ -248,6 +307,50 @@ export type Database = {
             columns: ["evento_id"]
             isOneToOne: false
             referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subitens_radar: {
+        Row: {
+          concluida: boolean
+          concluida_em: string | null
+          criado_em: string
+          descricao: string
+          id: string
+          item_radar_id: string
+          observacao: string | null
+          ordem: number
+          prazo: string | null
+        }
+        Insert: {
+          concluida?: boolean
+          concluida_em?: string | null
+          criado_em?: string
+          descricao: string
+          id?: string
+          item_radar_id: string
+          observacao?: string | null
+          ordem?: number
+          prazo?: string | null
+        }
+        Update: {
+          concluida?: boolean
+          concluida_em?: string | null
+          criado_em?: string
+          descricao?: string
+          id?: string
+          item_radar_id?: string
+          observacao?: string | null
+          ordem?: number
+          prazo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subitens_radar_item_radar_id_fkey"
+            columns: ["item_radar_id"]
+            isOneToOne: false
+            referencedRelation: "itens_radar"
             referencedColumns: ["id"]
           },
         ]

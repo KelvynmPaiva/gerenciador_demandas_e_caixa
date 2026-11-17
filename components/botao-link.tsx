@@ -16,14 +16,32 @@ export function BotaoLink({
   valor,
   onSalvar,
   rotulo,
+  aberto: abertoDeFora,
+  aoMudarAberto,
 }: {
   valor: string | null;
   onSalvar: (novoLink: string | null) => void;
   rotulo: string;
+  // Opcional: quem usa pode abrir a janelinha por fora (ex.: menu "Adicionar link")
+  aberto?: boolean;
+  aoMudarAberto?: (aberto: boolean) => void;
 }) {
-  const [aberto, setAberto] = useState(false);
+  const [abertoAqui, setAbertoAqui] = useState(false);
   const [texto, setTexto] = useState(valor ?? "");
+  const [abertoAntes, setAbertoAntes] = useState(false);
   const linkParaAbrir = linkSeguro(valor);
+  const aberto = abertoDeFora ?? abertoAqui;
+
+  // Aberta por fora: também começa com o link salvo
+  if (aberto !== abertoAntes) {
+    setAbertoAntes(aberto);
+    if (aberto) setTexto(valor ?? "");
+  }
+
+  function setAberto(novoEstado: boolean) {
+    setAbertoAqui(novoEstado);
+    aoMudarAberto?.(novoEstado);
+  }
 
   function aoAbrirOuFechar(novoEstado: boolean) {
     setAberto(novoEstado);

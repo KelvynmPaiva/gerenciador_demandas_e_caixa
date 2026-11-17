@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -23,6 +23,7 @@ import {
   CircleCheck,
   GripVertical,
   Link2,
+  MessageSquarePlus,
   Trash2,
   Users,
 } from "lucide-react";
@@ -43,10 +44,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { linkSeguro } from "@/lib/links";
+import { temConteudo } from "@/lib/listas";
 import { cn } from "@/lib/utils";
-import type { AcoesDemandas, Subtarefa, Tarefa } from "./demandas-tipos";
+import type { AcoesDoPainelTarefa, Subtarefa, Tarefa } from "./demandas-tipos";
 
 // Painel lateral com os detalhes da tarefa. Tudo salva sozinho ao sair do campo.
+// Também é usado pela lista "No Radar" da marca: lá não há evento (eventoNome = null).
 export function PainelTarefa({
   tarefa,
   marcaNome,
@@ -57,9 +60,9 @@ export function PainelTarefa({
 }: {
   tarefa: Tarefa | null; // null = painel fechado
   marcaNome: string;
-  eventoNome: string;
+  eventoNome: string | null; // null = item do Radar da marca
   hoje: string;
-  acoes: AcoesDemandas;
+  acoes: AcoesDoPainelTarefa;
   aoFechar: () => void;
 }) {
   // Guarda a última tarefa aberta para o conteúdo não sumir durante a animação de fechar
@@ -95,11 +98,16 @@ function ConteudoDoPainel({
 }: {
   tarefa: Tarefa;
   marcaNome: string;
-  eventoNome: string;
+  eventoNome: string | null;
   hoje: string;
-  acoes: AcoesDemandas;
+  acoes: AcoesDoPainelTarefa;
 }) {
   const [ocultarConcluidas, setOcultarConcluidas] = useState(false);
+  // A linha de observação das subtarefas só aparece se alguma tiver observação,
+  // ou depois de "Adicionar observação" em uma delas (para digitar a primeira)
+  const [observacaoAberta, setObservacaoAberta] = useState(false);
+  const mostrarObservacao =
+    observacaoAberta || temConteudo(tarefa.subtarefas, (s) => s.observacao);
 
   const total = tarefa.subtarefas.length;
   const feitas = tarefa.subtarefas.filter((s) => s.concluida).length;
@@ -178,9 +186,13 @@ function ConteudoDoPainel({
             </div>
           </LinhaDeCampo>
 
-          <LinhaDeCampo icone={<Users />} rotulo="Marca / Evento">
+          <LinhaDeCampo
+            icone={<Users />}
+            rotulo={eventoNome === null ? "Marca / Lista" : "Marca / Evento"}
+          >
             <span className="text-sm">
-              {marcaNome} <span className="text-muted-foreground">•</span> {eventoNome}
+              {marcaNome} <span className="text-muted-foreground">•</span>{" "}
+              {eventoNome ?? "No Radar"}
             </span>
           </LinhaDeCampo>
 
@@ -291,6 +303,8 @@ function ConteudoDoPainel({
                     tarefaId={tarefa.id}
                     hoje={hoje}
                     acoes={acoes}
+                    mostrarObservacao={mostrarObservacao}
+                    aoAbrirObservacao={() => setObservacaoAberta(true)}
                   />
                 ))}
               </SortableContext>
@@ -352,12 +366,24 @@ function LinhaSubtarefa({
   tarefaId,
   hoje,
   acoes,
+  mostrarObservacao,
+  aoAbrirObservacao,
 }: {
   subtarefa: Subtarefa;
   tarefaId: string;
   hoje: string;
-  acoes: AcoesDemandas;
+  acoes: AcoesDoPainelTarefa;
+  mostrarObservacao: boolean;
+  aoAbrirObservacao: () => void;
 }) {
+  const campoObservacao = useRef<HTMLInputElement>(null);
+
+  function adicionarObservacao() {
+    aoAbrirObservacao();
+    // O campo só existe depois que a linha de observação aparece
+    requestAnimationFrame(() => campoObservacao.current?.focus());
+  }
+
   const {
     attributes,
     listeners,
@@ -410,6 +436,18 @@ function LinhaSubtarefa({
             }
           />
         </div>
+        {!mostrarObservacao && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Adicionar observação à subtarefa ${subtarefa.descricao}`}
+            title="Adicionar observação"
+            className="text-muted-foreground"
+            onClick={adicionarObservacao}
+          >
+            <MessageSquarePlus />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon-sm"
@@ -432,17 +470,20 @@ function LinhaSubtarefa({
           concluido={subtarefa.concluida}
           onChange={(prazo) => acoes.salvarSubtarefa(tarefaId, subtarefa.id, { prazo })}
         />
-        <div className="min-w-0 flex-1">
-          <CampoTexto
-            rotulo={`Observação da subtarefa ${subtarefa.descricao}`}
-            placeholder="Observação"
-            valor={subtarefa.observacao}
-            onSalvar={(observacao) =>
-              acoes.salvarSubtarefa(tarefaId, subtarefa.id, { observacao })
-            }
-            className="text-xs text-muted-foreground"
-          />
-        </div>
+        {mostrarObservacao && (
+          <div className="min-w-0 flex-1">
+            <CampoTexto
+              ref={campoObservacao}
+              rotulo={`Observação da subtarefa ${subtarefa.descricao}`}
+              placeholder="Observação"
+              valor={subtarefa.observacao}
+              onSalvar={(observacao) =>
+                acoes.salvarSubtarefa(tarefaId, subtarefa.id, { observacao })
+              }
+              className="text-xs text-muted-foreground"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

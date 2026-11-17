@@ -161,6 +161,7 @@ export function CampoTexto({
   placeholder,
   className,
   obrigatorio = false,
+  ref,
 }: {
   valor: string | null;
   onSalvar: (novoTexto: string | null) => void;
@@ -168,6 +169,7 @@ export function CampoTexto({
   placeholder?: string;
   className?: string;
   obrigatorio?: boolean; // não deixa apagar tudo (ex.: nome do serviço)
+  ref?: React.Ref<HTMLInputElement>; // para focar o campo a partir de um menu ("Adicionar observação")
 }) {
   const [texto, setTexto] = useState(valor ?? "");
   const [valorAnterior, setValorAnterior] = useState(valor);
@@ -197,6 +199,7 @@ export function CampoTexto({
 
   return (
     <input
+      ref={ref}
       aria-label={rotulo}
       title={texto || undefined} // texto completo ao passar o mouse, quando o campo corta
       placeholder={placeholder}

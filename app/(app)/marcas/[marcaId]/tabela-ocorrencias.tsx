@@ -1,7 +1,7 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
-import { EllipsisVertical, Pencil, Repeat, Trash2 } from "lucide-react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
+import { EllipsisVertical, MessageSquareText, Pencil, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CampoTexto, CampoValor } from "@/components/campos-inline";
 import { DialogoConfirmar } from "@/components/dialogo-confirmar";
@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -24,7 +25,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ocorrenciaConcluida } from "@/lib/despesas";
 import { formatarMoeda, plural, somarValores } from "@/lib/formato";
+import { pendentesPrimeiro, temConteudo } from "@/lib/listas";
+import { ROTULO_DO_STATUS, TOM_DO_STATUS, type StatusLancamento } from "@/lib/status";
 import {
   atualizarOcorrencia,
   excluirNota,
@@ -44,14 +48,11 @@ export type LinhaOcorrencia = {
   nota: NotaRecorrente;
 };
 
-type StatusOcorrencia = "concluida" | "falta_valor_real" | "pendente";
-
-// Regra de negócio: só está concluída com check marcado E valor real preenchido.
-// Check marcado sem valor real = "Falta valor real". Só o valor real não conclui.
-function statusDaOcorrencia(linha: LinhaOcorrencia): StatusOcorrencia {
-  if (linha.checkMarcado && linha.valorReal !== null) return "concluida";
-  if (linha.checkMarcado) return "falta_valor_real";
-  return "pendente";
+// Só dois status (lib/status.ts): Lançado = check marcado E valor real (regra do banco,
+// ocorrenciaConcluida). Check sem valor real continua Pendente; "Falta valor real"
+// deixou de ser status e virou só um aviso no campo de valor.
+function statusDaOcorrencia(linha: LinhaOcorrencia): StatusLancamento {
+  return ocorrenciaConcluida(linha) ? "lancada" : "pendente";
 }
 
 export function TabelaOcorrencias({
@@ -80,6 +81,16 @@ export function TabelaOcorrencias({
     });
   }
 
+  // Coluna Observação: só com conteúdo em alguma linha, ou depois de "Adicionar observação"
+  // no menu (para poder digitar a primeira)
+  const [observacaoAberta, setObservacaoAberta] = useState(false);
+  const mostrarObservacao = observacaoAberta || temConteudo(linhas, (l) => l.observacao);
+  const qtdColunas = 6 + Number(mostrarObservacao);
+
+  // Ordenado depois do otimista: marcar o check (com valor real) já desce a linha na hora.
+  // A ordem por data vem da página e é mantida dentro de cada grupo.
+  const ordenadas = pendentesPrimeiro(linhas, ocorrenciaConcluida);
+
   return (
     <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
       <Table className="max-md:block">
@@ -91,7 +102,7 @@ export function TabelaOcorrencias({
             <TableHead>Nome da despesa</TableHead>
             <TableHead>Data</TableHead>
             <TableHead className="text-right">Valor real</TableHead>
-            <TableHead>Observação</TableHead>
+            {mostrarObservacao && <TableHead>Observação</TableHead>}
             <TableHead>Status</TableHead>
             <TableHead className="w-12">
               <span className="sr-only">Ações</span>
@@ -101,7 +112,7 @@ export function TabelaOcorrencias({
         <TableBody className="max-md:block">
           {linhas.length === 0 && (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={7} className="h-auto p-0 whitespace-normal">
+              <TableCell colSpan={qtdColunas} className="h-auto p-0 whitespace-normal">
                 <EmptyState
                   icon={Repeat}
                   title="Nenhuma despesa neste mês"
@@ -110,11 +121,13 @@ export function TabelaOcorrencias({
               </TableCell>
             </TableRow>
           )}
-          {linhas.map((linha) => (
+          {ordenadas.map((linha) => (
             <LinhaDaTabela
               key={linha.id}
               linha={linha}
               hoje={hoje}
+              mostrarObservacao={mostrarObservacao}
+              aoAbrirObservacao={() => setObservacaoAberta(true)}
               aoSalvar={salvar}
             />
           ))}
@@ -140,20 +153,36 @@ export function TabelaOcorrencias({
 function LinhaDaTabela({
   linha,
   hoje,
+  mostrarObservacao,
+  aoAbrirObservacao,
   aoSalvar,
 }: {
   linha: LinhaOcorrencia;
   hoje: string;
+  mostrarObservacao: boolean;
+  aoAbrirObservacao: () => void;
   aoSalvar: (id: string, campos: CamposOcorrencia) => void;
 }) {
   const [editando, setEditando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
   const [excluindoMes, setExcluindoMes] = useState(false);
   const [ocupado, iniciar] = useTransition();
+  const campoObservacao = useRef<HTMLInputElement>(null);
+  // "Adicionar observação" no menu: o campo só pode receber o foco depois que o menu fecha
+  const focarObservacao = useRef(false);
 
   const nome = linha.nota.nome;
   const status = statusDaOcorrencia(linha);
-  const atrasada = status !== "concluida" && linha.vencimento < hoje;
+  const lancado = status === "lancada";
+  const faltaValorReal = linha.checkMarcado && linha.valorReal === null;
+  const atrasada = !lancado && linha.vencimento < hoje;
+
+  function aoFecharMenu(evento: Event) {
+    if (!focarObservacao.current) return;
+    evento.preventDefault(); // o foco vai para o campo, não de volta para o botão do menu
+    focarObservacao.current = false;
+    requestAnimationFrame(() => campoObservacao.current?.focus());
+  }
 
   function confirmarExclusao() {
     iniciar(async () => {
@@ -203,7 +232,7 @@ function LinhaDaTabela({
           rotulo={`Data de ${nome}`}
           valor={linha.vencimento}
           destaque={atrasada}
-          concluido={status === "concluida"}
+          concluido={lancado}
           permitirLimpar={false}
           onChange={(vencimento) =>
             vencimento && aoSalvar(linha.id, { vencimento })
@@ -212,31 +241,40 @@ function LinhaDaTabela({
       </TableCell>
 
       <TableCell className="text-right max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
-        <div className="flex justify-end">
+        {/* Check marcado sem valor real: aviso no próprio campo (não é um status) */}
+        <div className="flex flex-col items-end gap-0.5">
           <CampoValor
-            rotulo={`Valor real de ${nome}`}
+            rotulo={
+              faltaValorReal
+                ? `Valor real de ${nome} (falta preencher para ficar ${ROTULO_DO_STATUS.lancada})`
+                : `Valor real de ${nome}`
+            }
             valor={linha.valorReal}
-            destaque={status === "falta_valor_real"}
+            destaque={faltaValorReal}
             onSalvar={(valorReal) => aoSalvar(linha.id, { valorReal })}
           />
+          {faltaValorReal && (
+            <span className="pr-1 text-[11.5px] font-medium text-warning-text">
+              Falta valor real
+            </span>
+          )}
         </div>
       </TableCell>
 
-      <TableCell className="min-w-[160px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2">
-        <CampoTexto
-          rotulo={`Observação de ${nome}`}
-          placeholder="Adicionar observação"
-          valor={linha.observacao}
-          onSalvar={(observacao) => aoSalvar(linha.id, { observacao })}
-        />
-      </TableCell>
+      {mostrarObservacao && (
+        <TableCell className="min-w-[160px] max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-2">
+          <CampoTexto
+            ref={campoObservacao}
+            rotulo={`Observação de ${nome}`}
+            placeholder="Adicionar observação"
+            valor={linha.observacao}
+            onSalvar={(observacao) => aoSalvar(linha.id, { observacao })}
+          />
+        </TableCell>
+      )}
 
       <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:col-span-1">
-        {status === "concluida" && <StatusBadge tone="success">Concluída</StatusBadge>}
-        {status === "falta_valor_real" && (
-          <StatusBadge tone="warning">Falta valor real</StatusBadge>
-        )}
-        {status === "pendente" && <StatusBadge tone="neutral">Pendente</StatusBadge>}
+        <StatusBadge tone={TOM_DO_STATUS[status]}>{ROTULO_DO_STATUS[status]}</StatusBadge>
       </TableCell>
 
       <TableCell className="max-md:block max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:absolute max-md:top-2 max-md:right-2">
@@ -251,7 +289,17 @@ function LinhaDaTabela({
               <EllipsisVertical />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuContent align="end" className="w-52" onCloseAutoFocus={aoFecharMenu}>
+            <DropdownMenuItem
+              onSelect={() => {
+                focarObservacao.current = true;
+                aoAbrirObservacao(); // a coluna aparece para receber a primeira observação
+              }}
+            >
+              <MessageSquareText />{" "}
+              {linha.observacao ? "Editar observação" : "Adicionar observação"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setEditando(true)}>
               <Pencil /> Renomear despesa
             </DropdownMenuItem>

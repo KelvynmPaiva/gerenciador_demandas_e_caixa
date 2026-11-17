@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CircleCheck, ListChecks, Receipt, Repeat } from "lucide-react";
+import { CircleCheck, ListChecks, Radar, Receipt, Repeat } from "lucide-react";
 import { toast } from "sonner";
 import { atualizarItem } from "@/app/(app)/eventos/[eventoId]/actions";
 import {
@@ -11,29 +11,31 @@ import {
   atualizarTarefa,
 } from "@/app/(app)/eventos/[eventoId]/actions-demandas";
 import { atualizarOcorrencia } from "@/app/(app)/marcas/[marcaId]/actions";
+import {
+  atualizarItemRadar,
+  atualizarSubitemRadar,
+} from "@/app/(app)/marcas/[marcaId]/actions-radar";
 import { CampoValor } from "@/components/campos-inline";
 import { DateChip } from "@/components/date-chip";
 import { Money } from "@/components/money";
 import { StatusBadge } from "@/components/status-badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  classificar,
-  diasAte,
-  domingoDaSemana,
-  somarDias,
-  type Periodo,
-} from "@/lib/datas";
+import { classificar, diasAte, diasDoPeriodo, type Periodo } from "@/lib/datas";
 import { plural } from "@/lib/formato";
 import {
   enderecoDaPendencia,
+  enderecoDoRadar,
   faltaValorReal,
   ordenarPendencias,
+  ordenarSemPrazo,
   ROTULOS_DO_TIPO,
+  type ItemRadarSemPrazo,
   type Pendencia,
   type TipoPendencia,
 } from "@/lib/pendencias";
-import { intervaloCurto } from "@/lib/prazo";
+import { diaCurto, intervaloCurto } from "@/lib/prazo";
 import type { Resultado } from "@/lib/resultado";
+import { ROTULO_DO_STATUS, TOM_DO_STATUS } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 // Tempos da microinteração ao concluir: o título fica riscado por 700ms,
@@ -58,10 +60,16 @@ const BLOCOS: Bloco[] = [
     ponto: "bg-danger",
   },
   {
+    periodo: "hoje",
+    titulo: "Hoje",
+    vazio: "Nada vence hoje.",
+    ponto: "bg-warning", // mesmo âmbar do prazo "Hoje" no DateChip
+  },
+  {
     periodo: "esta_semana",
     titulo: "Esta semana",
-    vazio: "Nenhum item vence de hoje até domingo.",
-    ponto: "bg-warning",
+    vazio: "Nenhum item vence de amanhã até domingo.",
+    ponto: "bg-brand",
   },
   {
     periodo: "proxima_semana",
@@ -76,61 +84,58 @@ const ICONES_DO_TIPO: Record<TipoPendencia, React.ElementType> = {
   subtarefa: ListChecks,
   nf: Receipt,
   recorrente: Repeat,
+  radar: Radar,
+  subitem_radar: Radar,
 };
 
+// NF e despesa usam o mesmo texto de status do resto do app (lib/status.ts)
 const AVISO_DE_CONCLUSAO: Record<TipoPendencia, string> = {
   tarefa: "Tarefa concluída",
   subtarefa: "Subtarefa concluída",
-  nf: "NF lançada",
-  recorrente: "Despesa concluída",
+  nf: `NF: ${ROTULO_DO_STATUS.lancada}`,
+  recorrente: `Despesa: ${ROTULO_DO_STATUS.lancada}`,
+  radar: "Tarefa do Radar concluída",
+  subitem_radar: "Subtarefa do Radar concluída",
 };
 
-// Grava o que a pessoa acabou de marcar. Cada tipo de item é salvo na sua tabela.
-function gravarConclusao(item: Pendencia): Promise<Resultado> {
-  switch (item.tipo) {
+// Grava a conclusão (true) ou o "Desfazer" (false). Cada tipo é salvo na sua tabela.
+// Recorrentes não passam por aqui: dependem do check E do valor real (ver marcar()).
+function gravarConclusao(
+  tipo: TipoPendencia,
+  id: string,
+  concluida: boolean,
+): Promise<Resultado> {
+  switch (tipo) {
     case "tarefa":
-      return atualizarTarefa(item.id, { concluida: true });
+      return atualizarTarefa(id, { concluida });
     case "subtarefa":
-      return atualizarSubtarefa(item.id, { concluida: true });
+      return atualizarSubtarefa(id, { concluida });
     case "nf":
-      return atualizarItem(item.id, { statusNf: "lancada" });
+      return atualizarItem(id, { statusNf: concluida ? "lancada" : "pendente" });
+    case "radar":
+      return atualizarItemRadar(id, { concluida });
+    case "subitem_radar":
+      return atualizarSubitemRadar(id, { concluida });
     default:
       return Promise.resolve({ erro: null });
   }
 }
 
-// O contrário de gravarConclusao (botão "Desfazer" do aviso)
-function reverterConclusao(item: Pendencia): Promise<Resultado> {
-  switch (item.tipo) {
-    case "tarefa":
-      return atualizarTarefa(item.id, { concluida: false });
-    case "subtarefa":
-      return atualizarSubtarefa(item.id, { concluida: false });
-    case "nf":
-      return atualizarItem(item.id, { statusNf: "pendente" });
-    default:
-      return Promise.resolve({ erro: null });
-  }
-}
-
-export function BlocosPainel({
-  pendencias: doServidor,
-  hoje,
-  children,
-}: {
-  pendencias: Pendencia[];
-  hoje: string; // "AAAA-MM-DD" em São Paulo
-  children?: React.ReactNode; // coluna da direita (lista de marcas), vinda do servidor
-}) {
+// Cópia local de uma lista do painel, com conclusão animada e "Desfazer".
+// A tela trabalha nessa cópia: o item é riscado na hora e a gravação acontece em
+// seguida. Se der erro, o item volta e a tela é recarregada do servidor.
+// Usada pelos grupos por data e pelo bloco "No Radar" (itens sem prazo).
+function useListaComConclusao<T extends { chave: string }>(
+  doServidor: T[],
+  ordenar: (lista: T[]) => T[],
+) {
   const router = useRouter();
 
-  // A tela trabalha numa cópia local: o item é riscado na hora e a gravação acontece em
-  // seguida. Se der erro, o item volta e a tela é recarregada do servidor.
   const [itens, setItens] = useState(doServidor);
   const [versaoDoServidor, setVersaoDoServidor] = useState(doServidor);
   const [gravacoesPendentes, setGravacoesPendentes] = useState(0);
   // Itens recém-concluídos que ainda aparecem (riscados) até a animação acabar
-  const [saindo, setSaindo] = useState<Map<string, { item: Pendencia; fase: Fase }>>(
+  const [saindo, setSaindo] = useState<Map<string, { item: T; fase: Fase }>>(
     new Map(),
   );
   const temporizadores = useRef(new Map<string, number[]>());
@@ -179,7 +184,7 @@ export function BlocosPainel({
   }
 
   // Troca o item por uma versão nova (ou remove, com null)
-  function aplicar(item: Pendencia, novo: Pendencia | null) {
+  function aplicar(item: T, novo: T | null) {
     setItens((atuais) =>
       novo
         ? atuais.map((i) => (i.chave === item.chave ? novo : i))
@@ -188,12 +193,12 @@ export function BlocosPainel({
   }
 
   // Devolve o item ao estado de antes (se ele tinha sumido, volta no lugar certo)
-  function restaurar(item: Pendencia) {
+  function restaurar(item: T) {
     cancelarSaida(item.chave);
     setItens((atuais) =>
       atuais.some((i) => i.chave === item.chave)
         ? atuais.map((i) => (i.chave === item.chave ? item : i))
-        : ordenarPendencias([...atuais, item]),
+        : ordenar([...atuais, item]),
     );
   }
 
@@ -209,7 +214,11 @@ export function BlocosPainel({
   }
 
   // Risca o item, depois some com ele. `reverter` é o que o "Desfazer" grava no banco.
-  function concluirComAnimacao(item: Pendencia, reverter: () => Promise<Resultado>) {
+  function concluirComAnimacao(
+    item: T,
+    aviso: string,
+    reverter: () => Promise<Resultado>,
+  ) {
     aplicar(item, null);
     cancelarSaida(item.chave);
     setSaindo((atuais) => new Map(atuais).set(item.chave, { item, fase: "riscado" }));
@@ -231,7 +240,7 @@ export function BlocosPainel({
     }, TEMPO_RISCADO + TEMPO_SUMIR);
     temporizadores.current.set(item.chave, [t1, t2]);
 
-    toast(AVISO_DE_CONCLUSAO[item.tipo], {
+    toast(aviso, {
       action: {
         label: "Desfazer",
         onClick: () => {
@@ -242,13 +251,64 @@ export function BlocosPainel({
     });
   }
 
+  // Conclusão simples (tudo menos recorrente): some com animação e grava em seguida
+  function concluir(
+    item: T,
+    aviso: string,
+    gravarComo: (concluida: boolean) => Promise<Resultado>,
+  ) {
+    concluirComAnimacao(item, aviso, () => gravarComo(false));
+    gravar(
+      () => gravarComo(true),
+      () => restaurar(item),
+    );
+  }
+
+  // O que aparece: os itens pendentes mais os que acabaram de ser concluídos (riscados)
+  const visiveis = ordenar([...itens, ...[...saindo.values()].map((s) => s.item)]);
+
+  return {
+    itens, // só os pendentes: é o que os números contam
+    visiveis,
+    faseDe: (chave: string) => saindo.get(chave)?.fase,
+    gravar,
+    aplicar,
+    restaurar,
+    concluirComAnimacao,
+    concluir,
+  };
+}
+
+export function BlocosPainel({
+  pendencias: doServidor,
+  radarSemPrazo: radarDoServidor,
+  hoje,
+  children,
+}: {
+  pendencias: Pendencia[];
+  radarSemPrazo: ItemRadarSemPrazo[]; // bloco "No Radar": itens do Radar sem prazo
+  hoje: string; // "AAAA-MM-DD" em São Paulo
+  children?: React.ReactNode; // coluna da direita (lista de marcas), vinda do servidor
+}) {
+  const {
+    itens,
+    visiveis,
+    faseDe,
+    gravar,
+    aplicar,
+    restaurar,
+    concluirComAnimacao,
+    concluir,
+  } = useListaComConclusao(doServidor, ordenarPendencias);
+  const radar = useListaComConclusao(radarDoServidor, ordenarSemPrazo);
+
   function marcar(item: Pendencia, marcado: boolean) {
     if (item.tipo === "recorrente") {
       // Só conclui (e some) com check marcado E valor real preenchido.
       // Sem valor real, o item fica com o aviso "Falta valor real".
       const concluiu = marcado && item.valorReal !== null;
       if (concluiu) {
-        concluirComAnimacao(item, () =>
+        concluirComAnimacao(item, AVISO_DE_CONCLUSAO.recorrente, () =>
           atualizarOcorrencia(item.id, { checkMarcado: false }),
         );
       } else {
@@ -262,17 +322,22 @@ export function BlocosPainel({
     }
 
     if (!marcado) return;
-    concluirComAnimacao(item, () => reverterConclusao(item));
-    gravar(
-      () => gravarConclusao(item),
-      () => restaurar(item),
+    concluir(item, AVISO_DE_CONCLUSAO[item.tipo], (concluida) =>
+      gravarConclusao(item.tipo, item.id, concluida),
+    );
+  }
+
+  function marcarSemPrazo(item: ItemRadarSemPrazo, marcado: boolean) {
+    if (!marcado) return;
+    radar.concluir(item, AVISO_DE_CONCLUSAO[item.tipo], (concluida) =>
+      gravarConclusao(item.tipo, item.id, concluida),
     );
   }
 
   function salvarValor(item: Pendencia, valorReal: number | null) {
     const concluiu = item.checkMarcado && valorReal !== null;
     if (concluiu) {
-      concluirComAnimacao(item, () =>
+      concluirComAnimacao(item, AVISO_DE_CONCLUSAO.recorrente, () =>
         atualizarOcorrencia(item.id, { valorReal: item.valorReal }),
       );
     } else {
@@ -284,12 +349,6 @@ export function BlocosPainel({
     );
   }
 
-  // O que aparece: os itens pendentes mais os que acabaram de ser concluídos (riscados)
-  const visiveis = ordenarPendencias([
-    ...itens,
-    ...[...saindo.values()].map((s) => s.item),
-  ]);
-
   const porPeriodo = new Map<Bloco["periodo"], Pendencia[]>();
   for (const bloco of BLOCOS) porPeriodo.set(bloco.periodo, []);
   for (const item of visiveis) {
@@ -300,30 +359,38 @@ export function BlocosPainel({
   const pendentes = (periodo: Bloco["periodo"]) =>
     itens.filter((i) => classificar(i.data, hoje) === periodo);
   const atrasadas = pendentes("atrasada");
+  const deHoje = pendentes("hoje");
   const estaSemana = pendentes("esta_semana");
   const proximaSemana = pendentes("proxima_semana");
   const nfs = itens.filter((i) => i.tipo === "nf");
   const maisAntiga = atrasadas.length
     ? Math.max(...atrasadas.map((i) => diasAte(hoje, i.data)))
     : 0;
-  const vencemHoje = estaSemana.filter((i) => i.data === hoje).length;
-  const domingo = domingoDaSemana(hoje);
+  // Esta semana não inclui hoje; no domingo ela não tem nenhum dia (intervalo invertido)
+  const diasDaSemana = diasDoPeriodo("esta_semana", hoje);
+  const diasDaProxima = diasDoPeriodo("proxima_semana", hoje);
   const faixas: Record<Bloco["periodo"], string> = {
     atrasada: "antes de hoje",
-    esta_semana: intervaloCurto(hoje, domingo),
-    proxima_semana: intervaloCurto(somarDias(domingo, 1), somarDias(domingo, 7)),
+    hoje: diaCurto(hoje),
+    esta_semana: diasDaSemana
+      ? intervaloCurto(diasDaSemana.inicio, diasDaSemana.fim)
+      : "a semana termina hoje",
+    proxima_semana: diasDaProxima
+      ? intervaloCurto(diasDaProxima.inicio, diasDaProxima.fim)
+      : "",
   };
 
   return (
     <>
       <p className="mt-1.5 text-muted-foreground">
-        {atrasadas.length === 0 && estaSemana.length === 0
-          ? "Nada atrasado nem vencendo esta semana."
-          : `${plural(atrasadas.length, "item atrasado", "itens atrasados")} e ${estaSemana.length} vencendo esta semana.`}
+        {atrasadas.length === 0 && deHoje.length === 0 && estaSemana.length === 0
+          ? "Nada atrasado, nada para hoje nem para o resto da semana."
+          : `${plural(atrasadas.length, "item atrasado", "itens atrasados")}, ${deHoje.length} para hoje e ${estaSemana.length} no resto da semana.`}
       </p>
 
-      {/* Faixa de resumo: cada número leva ao grupo correspondente */}
-      <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-lg border bg-card shadow-xs lg:grid-cols-4">
+      {/* Faixa de resumo: cada número leva ao grupo correspondente.
+          No celular são 2 colunas: a 5ª célula ocupa a linha inteira. */}
+      <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-lg border bg-card shadow-xs lg:grid-cols-5">
         <ResumoLink
           href="#grupo-atrasada"
           rotulo="Atrasadas"
@@ -333,11 +400,18 @@ export function BlocosPainel({
           alerta={atrasadas.length > 0}
         />
         <ResumoLink
+          href="#grupo-hoje"
+          rotulo="Hoje"
+          ponto="bg-warning"
+          numero={deHoje.length}
+          sub={faixas.hoje}
+        />
+        <ResumoLink
           href="#grupo-esta_semana"
           rotulo="Esta semana"
-          ponto="bg-warning"
+          ponto="bg-brand"
           numero={estaSemana.length}
-          sub={vencemHoje ? `${vencemHoje} ${vencemHoje === 1 ? "vence" : "vencem"} hoje` : faixas.esta_semana}
+          sub={faixas.esta_semana}
         />
         <ResumoLink
           href="#grupo-proxima_semana"
@@ -352,6 +426,7 @@ export function BlocosPainel({
           icone={Receipt}
           numero={nfs.length}
           sub={nfs.length ? `${nfs.filter((i) => i.data < hoje).length} atrasadas` : "nenhuma pendente"}
+          className="max-lg:col-span-2"
         />
       </div>
 
@@ -405,7 +480,9 @@ export function BlocosPainel({
                 {doBloco.length === 0 ? (
                   <p className="flex items-center gap-2 px-4 py-3.5 text-[13px] text-muted-foreground">
                     <CircleCheck className="size-4 text-success" aria-hidden />
-                    {bloco.vazio}
+                    {bloco.periodo === "esta_semana" && !diasDaSemana
+                      ? "Hoje é domingo: o que vence hoje está no grupo Hoje."
+                      : bloco.vazio}
                   </p>
                 ) : (
                   <ul>
@@ -414,7 +491,7 @@ export function BlocosPainel({
                         key={item.chave}
                         item={item}
                         hoje={hoje}
-                        fase={saindo.get(item.chave)?.fase}
+                        fase={faseDe(item.chave)}
                         aoMarcar={marcar}
                         aoSalvarValor={salvarValor}
                       />
@@ -424,6 +501,43 @@ export function BlocosPainel({
               </section>
             );
           })}
+
+          {/* Itens do Radar sem prazo: não caem em nenhum grupo por data, ficam aqui
+              com o nome da marca. Os com prazo já estão nos grupos acima. */}
+          <section
+            id="grupo-radar"
+            aria-labelledby="bloco-radar"
+            className="scroll-mt-20 overflow-hidden rounded-lg border bg-card shadow-xs"
+          >
+            <header className="flex h-10 items-center gap-2 border-b bg-muted px-4 text-[13px]">
+              <Radar className="size-3.5 text-muted-foreground" aria-hidden />
+              <h2 id="bloco-radar" className="font-semibold">
+                No Radar
+              </h2>
+              <span className="font-mono text-xs text-muted-foreground">
+                {radar.itens.length}
+              </span>
+              <span className="ml-auto text-xs text-muted-foreground">sem prazo</span>
+            </header>
+
+            {radar.visiveis.length === 0 ? (
+              <p className="flex items-center gap-2 px-4 py-3.5 text-[13px] text-muted-foreground">
+                <CircleCheck className="size-4 text-success" aria-hidden />
+                Nada sem prazo no Radar das marcas.
+              </p>
+            ) : (
+              <ul>
+                {radar.visiveis.map((item) => (
+                  <LinhaSemPrazo
+                    key={item.chave}
+                    item={item}
+                    fase={radar.faseDe(item.chave)}
+                    aoMarcar={marcarSemPrazo}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
 
         {children}
@@ -440,6 +554,7 @@ function ResumoLink({
   numero,
   sub,
   alerta = false,
+  className,
 }: {
   href: string;
   rotulo: string;
@@ -448,13 +563,17 @@ function ResumoLink({
   numero: number;
   sub: string;
   alerta?: boolean;
+  className?: string;
 }) {
   return (
     <a
       href={href}
       className={cn(
-        "block border-l px-4 py-3.5 transition-colors first:border-l-0 hover:bg-muted max-lg:nth-[n+3]:border-t max-lg:nth-[3]:border-l-0",
+        // No celular (2 colunas) a célula que abre cada linha (1ª, 3ª, 5ª) não tem borda
+        // à esquerda, e da 2ª linha em diante há borda em cima.
+        "block border-l px-4 py-3.5 transition-colors first:border-l-0 hover:bg-muted max-lg:odd:border-l-0 max-lg:nth-[n+3]:border-t",
         alerta && "bg-danger-subtle text-danger-text hover:bg-danger-subtle/70",
+        className,
       )}
     >
       <div
@@ -523,13 +642,8 @@ function LinhaPendencia({
             {item.titulo}
           </Link>
           {item.tipo === "nf" && !concluido && (
-            <StatusBadge tone="danger" className="h-5 text-[11.5px]">
-              Lançamento pendente
-            </StatusBadge>
-          )}
-          {faltaValor && (
-            <StatusBadge tone="warning" className="h-5 text-[11.5px]">
-              Falta valor real
+            <StatusBadge tone={TOM_DO_STATUS.pendente} className="h-5 text-[11.5px]">
+              {ROTULO_DO_STATUS.pendente}
             </StatusBadge>
           )}
         </div>
@@ -550,9 +664,11 @@ function LinhaPendencia({
         <DateChip data={item.data} concluido={concluido} hoje={hoje} />
       </div>
 
+      {/* "Falta valor real" não é um status: é só o aviso junto do campo de valor.
+          O item continua Pendente até ter check E valor real. */}
       {faltaValor && (
         <div className="relative z-10 col-start-2 col-end-4 flex items-center gap-2">
-          <span className="text-xs font-medium text-warning-text">Inserir valor:</span>
+          <span className="text-xs font-medium text-warning-text">Falta valor real:</span>
           <CampoValor
             rotulo={`Valor real de ${item.titulo}`}
             valor={item.valorReal}
@@ -561,6 +677,59 @@ function LinhaPendencia({
           />
         </div>
       )}
+    </li>
+  );
+}
+
+// Linha do bloco "No Radar": mesmo desenho da LinhaPendencia, sem data
+function LinhaSemPrazo({
+  item,
+  fase,
+  aoMarcar,
+}: {
+  item: ItemRadarSemPrazo;
+  fase?: Fase;
+  aoMarcar: (item: ItemRadarSemPrazo, marcado: boolean) => void;
+}) {
+  const concluido = fase !== undefined;
+  const Icone = ICONES_DO_TIPO[item.tipo];
+
+  return (
+    <li
+      className={cn(
+        "relative grid min-h-[52px] grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-3 border-t border-border-subtle px-4 py-2 transition-[background,opacity] duration-200 ease-out first:border-t-0 hover:bg-row-hover",
+        fase === "saindo" && "opacity-0",
+      )}
+    >
+      <div className="relative z-10">
+        <Checkbox
+          checked={concluido}
+          disabled={concluido}
+          onCheckedChange={(marcado) => aoMarcar(item, marcado === true)}
+          aria-label={`Concluir "${item.titulo}"`}
+        />
+      </div>
+
+      <div className="min-w-0">
+        <Link
+          href={enderecoDoRadar(item.marcaId)}
+          className={cn(
+            "block truncate text-[13.5px] font-medium after:absolute after:inset-0 hover:underline hover:underline-offset-3",
+            concluido && "text-muted-foreground line-through decoration-border-strong",
+          )}
+        >
+          {item.titulo}
+        </Link>
+        <div className="mt-0.5 truncate text-xs text-muted-foreground">
+          {item.marcaNome}
+          {item.itemPai && ` · ${item.itemPai}`}
+        </div>
+      </div>
+
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Icone className="size-3" aria-hidden />
+        {ROTULOS_DO_TIPO[item.tipo]}
+      </span>
     </li>
   );
 }

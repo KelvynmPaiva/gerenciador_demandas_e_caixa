@@ -49,6 +49,7 @@ describe("eventos", () => {
     expect(resumos.get("e2")).toEqual({
       totalReal: 0,
       nfsPendentes: 0,
+      nfsVencidas: 0,
       tarefasPendentes: 0,
     });
   });

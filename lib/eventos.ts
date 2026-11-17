@@ -5,7 +5,7 @@ type ClienteSupabase = Awaited<ReturnType<typeof createClient>>;
 // Números que aparecem no cartão de cada evento
 export type ResumoDoEvento = {
   totalReal: number; // soma do valor real de todos os itens do orçamento
-  nfsPendentes: number; // itens com NF ainda "Lançamento pendente"
+  nfsPendentes: number; // itens com NF ainda "Pendente"
   nfsVencidas: number; // dessas, as que já passaram do prazo para lançar (só conta se "hoje" for informado)
   tarefasPendentes: number; // tarefas (de qualquer seção) ainda não concluídas
 };

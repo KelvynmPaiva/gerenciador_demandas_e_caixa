@@ -47,3 +47,15 @@ export type AcoesDemandas = {
   excluirSubtarefa: (tarefaId: string, subtarefaId: string) => void;
   reordenarSubtarefas: (tarefaId: string, idsNaNovaOrdem: string[]) => void;
 };
+
+// Só o que a linha da tarefa e o painel lateral usam. Assim a lista "No Radar" da
+// marca (que não tem seções) reaproveita LinhaTarefa e PainelTarefa com as ações dela.
+export type AcoesDaLinha = Pick<AcoesDemandas, "salvarTarefa" | "excluirTarefa">;
+export type AcoesDoPainelTarefa = Pick<
+  AcoesDemandas,
+  | "salvarTarefa"
+  | "criarSubtarefa"
+  | "salvarSubtarefa"
+  | "excluirSubtarefa"
+  | "reordenarSubtarefas"
+>;
